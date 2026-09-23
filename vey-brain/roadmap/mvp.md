@@ -75,7 +75,7 @@ Transcription & Diarization (Foundation)
 
 ### Chi tiết các chặng trong Lát cắt:
 1. **Meeting Capture & Foundation**: Thu nhận cuộc họp thực tế (kết nối lịch, capture audio/video, sinh transcript kèm diarization và timestamps qua provider phù hợp). *Cơ chế upload audio / import transcript được duy trì song song làm luồng testing/fallback, nhưng primary path là real capture.*
-2. **Structured Work Context**: Trích xuất các thực thể nghiệp vụ ban đầu (Thread, Question, Blocker, Decision, Action) vào [[architecture/domain-model#Work Context Graph (Mô hình Khái niệm)|Work Context Graph]].
+2. **Structured Work Context**: Trích xuất các thực thể nghiệp vụ ban đầu (Question, Blocker, Decision, Action, và ứng viên trừu tượng hóa Thread nếu áp dụng) vào [[architecture/domain-model#Work Context Graph (Mô hình Khái niệm)|Work Context Graph]].
 3. **Closure Analysis**: Đánh giá các điều kiện quan sát được (observable conditions) để chỉ ra những câu hỏi chưa có giải đáp, action thiếu owner/deadline, hoặc blocker bỏ lửng.
 4. **Decision Timeline**: Lưu vết các `[[product/thuat-ngu#Decision|Decision]]` kèm trạng thái vòng đời ban đầu (`Accepted`), rationale và timestamp.
 5. **External-system Evidence**: Thu thập bằng chứng thực tế từ ít nhất một hệ thống ngoài đại diện (Jira issue hoặc GitHub PR) liên quan đến quyết định.

@@ -9,7 +9,7 @@ Danh mục các thuật ngữ cốt lõi được định nghĩa và sử dụng
 ---
 
 ### Meeting
-Sự kiện giao tiếp đồng bộ (synchronous session) diễn ra giữa các cá nhân/nhóm trong một khung thời gian cụ thể. Meeting tạo ra các phát biểu, câu hỏi, điểm nghẽn và các cam kết/quyết định. Trong Vey, Meeting là một loại `Event` nằm bên trong một hoặc nhiều `Thread`.
+Sự kiện giao tiếp đồng bộ (synchronous session) diễn ra giữa các cá nhân/nhóm trong một khung thời gian cụ thể. Meeting tạo ra các phát biểu, câu hỏi, điểm nghẽn và các cam kết/quyết định. Trong mô hình khái niệm của Vey, Meeting là một loại sự kiện điểm thời gian (`[[product/thuat-ngu#Event|Event]]`), không mặc định là root của toàn bộ tri thức.
 
 ### Thread
 Luồng công việc hoặc chủ đề ngữ cảnh xuyên suốt thời gian, kết nối các cuộc họp (`Meeting`), quyết định (`Decision`), hành động (`Action`), bằng chứng (`Evidence`) và đối tượng bên ngoài (`External Object`) liên quan. `Thread` hiện là một **giả thuyết trừu tượng hóa (abstraction hypothesis)** nhằm duy trì tính liên tục (Continuity).
@@ -18,16 +18,16 @@ Luồng công việc hoặc chủ đề ngữ cảnh xuyên suốt thời gian, 
 Thỏa thuận hoặc kết luận có tính cam kết về một định hướng, phương án kỹ thuật hoặc quy trình.
 * **Vòng đời trạng thái (Working Lifecycle Model)**:
   `Proposed` $\rightarrow$ `Accepted` $\rightarrow$ `Active` $\rightarrow$ `Superseded` hoặc `Invalidated`.
-* **Thuộc tính lưu trữ**: Có khả năng lưu nội dung, rationale, evidence, timestamp, participants, decision owner, authority context, affected work, related Thread, source meeting, external evidence, current lifecycle state, state history và superseding decision (nếu có).
+* **Thuộc tính lưu trữ**: Có khả năng lưu nội dung, rationale, evidence, timestamp, participants, decision owner, authority context, affected work, related Thread (nếu áp dụng), source meeting, external evidence, current lifecycle state, state history và superseding decision (nếu có).
 
 ### Action
-Nhiệm vụ hoặc hành động cụ thể phát sinh từ thảo luận cần được một hoặc nhiều cá nhân thực hiện để thúc đẩy tiến độ của `Thread` hoặc hoàn tất một `Decision`.
+Nhiệm vụ hoặc hành động cụ thể phát sinh từ thảo luận cần được một hoặc nhiều cá nhân thực hiện để thúc đẩy tiến độ công việc hoặc hoàn tất một `Decision`.
 
 ### Question
 Câu hỏi, vấn đề nghi vấn hoặc thắc mắc được nêu ra trong luồng thảo luận nhưng chưa có câu trả lời xác đáng tại thời điểm đó. Nếu không được giải quyết hoặc phân công xử lý, Question là tín hiệu hàng đầu khiến cuộc họp không đạt `Meeting Closure`.
 
 ### Blocker
-Yếu tố khách quan hoặc chủ quan cản trở tiến độ của một `Thread`, làm đình trệ việc ra `Decision` hoặc ngăn cản việc thực thi một `Action`.
+Yếu tố khách quan hoặc chủ quan cản trở tiến độ công việc, làm đình trệ việc ra `Decision` hoặc ngăn cản việc thực thi một `Action`.
 
 ### Dependency
 Mối quan hệ phụ thuộc, ràng buộc điều kiện tiên quyết (prerequisite) giữa các Action, Decision hoặc các luồng công việc trong hệ thống.

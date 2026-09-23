@@ -9,7 +9,7 @@ Tài liệu này định nghĩa các nguyên tắc chỉ đạo bất biến tro
 ---
 
 ## 1. Meeting không phải root của mọi knowledge
-Cuộc họp chỉ là một loại sự kiện điểm thời gian (`[[product/thuat-ngu#Event|Event]]`) trong vòng đời công việc. Tri thức, bối cảnh và cam kết bắt nguồn từ trước cuộc họp và tiếp tục tiến hóa sau cuộc họp. Hệ thống không tổ chức dữ liệu cô lập xoay quanh từng bản ghi âm riêng rẽ, mà tổ chức theo dòng chảy công việc (`[[product/thuat-ngu#Thread|Thread]]`).
+Cuộc họp chỉ là một loại sự kiện điểm thời gian (`[[product/thuat-ngu#Event|Event]]`) trong vòng đời công việc. Tri thức, bối cảnh và cam kết bắt nguồn từ trước cuộc họp và tiếp tục tiến hóa sau cuộc họp. Hệ thống không nên mặc định xem cuộc họp hay từng bản ghi âm riêng rẽ là trung tâm/gốc của toàn bộ tri thức, mà hướng tới tổ chức theo dòng chảy công việc và ngữ cảnh liên tục (`[[product/thuat-ngu#Thread|Thread]]` hiện đang được xem xét như một candidate abstraction cho mục tiêu này).
 
 ---
 

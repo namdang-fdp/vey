@@ -18,21 +18,21 @@ Mục đích cốt lõi của Vey là bảo toàn **mối quan hệ (relationshi
 
 ### Các Thực thể trong Mô hình (Domain Entities)
 
-| Thực thể | Bản chất & Vai trò trong Domain |
-| :--- | :--- |
-| **`Thread`** | *Hypothesis*: Khung chứa ngữ cảnh xuyên thời gian của một luồng công việc/chủ đề. |
-| **`Meeting`** | Sự kiện trao đổi đồng bộ; nơi phát sinh thảo luận, câu hỏi, cam kết và quyết định. |
-| **`Decision`** | Quyết định có vòng đời (`Proposed` $\rightarrow$ `Accepted` $\rightarrow$ `Active` $\rightarrow$ `Superseded`/`Invalidated`). |
-| **`Action`** | Đầu việc phát sinh cần hoàn thành để thực thi `Decision` hoặc giải tỏa `Blocker`. |
-| **`Question`** | Câu hỏi cần làm rõ. Tín hiệu quan sát chính để đánh giá `Meeting Closure`. |
-| **`Blocker`** | Yếu tố gây ách tắc tiến độ của `Thread`, `Decision` hoặc `Action`. |
-| **`Dependency`** | Mối quan hệ phụ thuộc hoặc ràng buộc điều kiện tiên quyết giữa các thực thể. |
-| **`Person`** | Cá nhân phát biểu, ra quyết định hoặc sở hữu công việc; đối tượng của bài toán Identity Resolution. |
-| **`Rationale`** | Lý do căn bản, căn cứ lập luận và bối cảnh giải thích việc hình thành quyết định. |
-| **`Evidence`** | Dữ liệu chứng cứ (transcript snippet, commit hash, ticket ID, message) bảo đảm tính provenance. |
-| **`External Object`** | Thực thể tham chiếu từ hệ thống ngoài (Jira issue, GitHub PR, Slack message). |
-| **`Event`** | Sự kiện điểm thời gian đánh dấu một hành động xảy ra trong không gian làm việc. |
-| **`State Change`** | Bản ghi ghi nhận sự biến đổi trạng thái của các thực thể theo thời gian. |
+| Thực thể              | Bản chất & Vai trò trong Domain                                                                                               |
+| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| **`Thread`**          | *Hypothesis*: Khung chứa ngữ cảnh xuyên thời gian của một luồng công việc/chủ đề.                                             |
+| **`Meeting`**         | Sự kiện trao đổi đồng bộ; nơi phát sinh thảo luận, câu hỏi, cam kết và quyết định.                                            |
+| **`Decision`**        | Quyết định có vòng đời (`Proposed` $\rightarrow$ `Accepted` $\rightarrow$ `Active` $\rightarrow$ `Superseded`/`Invalidated`). |
+| **`Action`**          | Đầu việc phát sinh cần hoàn thành để thực thi `Decision` hoặc giải tỏa `Blocker`.                                             |
+| **`Question`**        | Câu hỏi cần làm rõ. Tín hiệu quan sát chính để đánh giá `Meeting Closure`.                                                    |
+| **`Blocker`**         | Yếu tố gây ách tắc tiến độ công việc, ảnh hưởng tới `Decision` hoặc `Action` (và `Thread` nếu áp dụng).                     |
+| **`Dependency`**      | Mối quan hệ phụ thuộc hoặc ràng buộc điều kiện tiên quyết giữa các thực thể.                                                  |
+| **`Person`**          | Cá nhân phát biểu, ra quyết định hoặc sở hữu công việc; đối tượng của bài toán Identity Resolution.                           |
+| **`Rationale`**       | Lý do căn bản, căn cứ lập luận và bối cảnh giải thích việc hình thành quyết định.                                             |
+| **`Evidence`**        | Dữ liệu chứng cứ (transcript snippet, commit hash, ticket ID, message) bảo đảm tính provenance.                               |
+| **`External Object`** | Thực thể tham chiếu từ hệ thống ngoài (Jira issue, GitHub PR, Slack message).                                                 |
+| **`Event`**           | Sự kiện điểm thời gian đánh dấu một hành động xảy ra trong không gian làm việc.                                               |
+| **`State Change`**    | Bản ghi ghi nhận sự biến đổi trạng thái của các thực thể theo thời gian.                                                      |
 
 ### Thuộc tính Chung của Thực thể (Metadata Blueprint)
 Khi phù hợp, mỗi thực thể có thể mang một tập hợp các trường sau (không bắt buộc mọi thực thể phải có tất cả):
@@ -51,8 +51,8 @@ Khi phù hợp, mỗi thực thể có thể mang một tập hợp các trườ
 
 `[[product/thuat-ngu#Thread|Thread]]` hiện đang được xem xét như một ứng viên trừu tượng hóa (candidate abstraction) quan trọng nhằm giải quyết bài toán tính liên tục (Continuity).
 
-### Minh họa Dòng đời một Luồng công việc (Thread Lifecycle Example)
-Một `Thread` đại diện cho một luồng ngữ cảnh bền vững kéo dài qua nhiều sự kiện và hệ sinh thái công cụ:
+### Minh họa Khái niệm Luồng công việc (Thread Lifecycle Example `[Giả thuyết]`)
+Nếu giả thuyết `Thread` được áp dụng, một luồng ngữ cảnh bền vững có thể kéo dài qua nhiều sự kiện và hệ sinh thái công cụ theo hình dung sau:
 
 ```text
 Work Thread
@@ -75,7 +75,7 @@ Work Thread
 ```
 
 > [!important] Nguyên tắc thiết kế
-> Cuộc họp (`Meeting`) chỉ là một sự kiện (`Event`) hoặc nguồn dữ liệu (`Source`) bên trong `Thread`, **không phải là root object** của toàn bộ tri thức.
+> Cuộc họp (`Meeting`) chỉ là một sự kiện điểm thời gian (`[[product/thuat-ngu#Event|Event]]`) hoặc nguồn dữ liệu (`Source`), **không phải là root object** của toàn bộ tri thức. Trong mô hình giả thuyết về `Thread`, Meeting đóng vai trò là một điểm nút sinh ngữ cảnh trong luồng công việc, nhưng hệ thống không mặc định ép buộc mọi cuộc họp phải gắn cứng vào một cấu trúc Thread cố định.
 
 ### Các Câu hỏi Mở về `Thread` `[Đang mở]`
 Vì `Thread` vẫn đang là một giả thuyết, các câu hỏi sau chưa được khẳng định và cần kiểm chứng qua người dùng:
@@ -114,7 +114,7 @@ Active
 * Decision owner (người sở hữu hoặc bảo trợ quyết định);
 * Authority context (thẩm quyền của người ra quyết định);
 * Affected work (các đầu việc, module hoặc hệ thống bị ảnh hưởng);
-* Related Thread (luồng công việc chứa quyết định);
+* Related Thread (luồng công việc liên quan, nếu áp dụng);
 * Source meeting (cuộc họp phát sinh quyết định);
 * External evidence (bằng chứng đối soát từ Jira, GitHub, Slack);
 * Current lifecycle state (trạng thái vòng đời hiện tại);

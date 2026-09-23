@@ -82,7 +82,7 @@ Sau khi Meeting Platform Foundation tạo được luồng dữ liệu thật đ
   * *Hành vi của Vey*: Không âm thầm coi quyết định ban đầu vẫn còn đúng, mà phải nhận biết sự lệch pha để cảnh báo.
 * **Sáu năng lực của Reconciliation**:
   1. Tiếp nhận bằng chứng mới (`[[product/thuat-ngu#Evidence|Evidence]]`) từ external systems;
-  2. Liên kết evidence với quyết định (`[[product/thuat-ngu#Decision|Decision]]`) và luồng công việc (`[[product/thuat-ngu#Thread|Thread]]`);
+  2. Liên kết evidence với quyết định (`[[product/thuat-ngu#Decision|Decision]]`) và luồng công việc liên quan (candidate abstraction: `[[product/thuat-ngu#Thread|Thread]]`);
   3. Phát hiện nguy cơ mâu thuẫn hoặc trạng thái lạc hậu (possible contradiction / staleness);
   4. Đánh dấu quyết định cần được rà soát (needs review);
   5. Yêu cầu xác nhận từ con người (human confirmation) khi cần thiết;

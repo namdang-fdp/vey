@@ -18,10 +18,10 @@ title: Tầm nhìn sản phẩm (Product Vision)
 ### Thực trạng thị trường
 Công nghệ ghi âm (recording), chuyển giọng nói thành văn bản (transcription) và tóm tắt tự động (AI summarization) đã trở thành năng lực phổ thông (commodity). Tuy nhiên, **commodity không đồng nghĩa với tùy chọn (commodity ≠ optional)**: đây là nền tảng sản phẩm bắt buộc (table stakes) để Vey vận hành như một meeting product thật và tự tạo ra luồng dữ liệu first-party tin cậy.
 
-Sự khác biệt cốt lõi của Vey bắt đầu từ việc giải quyết giới hạn lớn nhất của thị trường: hầu hết các giải pháp hiện tại đều xem cuộc họp là **những sự kiện cô lập (isolated events)**:
+Khác biệt hóa của Vey tập trung vào khoảng trống mà nghiên cứu sơ bộ hiện tại ghi nhận ở các công cụ phổ biến: cuộc họp thường có xu hướng bị xử lý như **những sự kiện rời rạc (isolated events)**:
 1. Cuộc họp diễn ra $\rightarrow$ Biên bản được tạo ra $\rightarrow$ Biên bản trôi vào Slack, email hoặc tài liệu tĩnh.
 2. Công việc thực tế tiếp tục vận hành trên các công cụ chuyên trách: Jira, GitHub, Notion, Slack.
-3. Không có bất kỳ hệ thống nào theo dõi, liên kết và kiểm chứng xem những gì được thống nhất trong cuộc họp có thực sự được duy trì và thực thi ngoài đời thực hay không.
+3. Qua các giải pháp đã khảo sát, việc liên tục theo dõi, liên kết và đối soát xem những gì đã thống nhất trong cuộc họp có thực sự được duy trì và nhất quán với diễn biến thực tế hay không chưa thấy được đặt làm trọng tâm rõ ràng.
 
 ### Ba đứt gãy cốt lõi trong tổ chức
 * **Sự thiếu dứt điểm (Lack of Closure)**: Cuộc họp kết thúc khi các vấn đề quan trọng vẫn chưa đạt được kết luận rõ ràng, tạo ra lượng việc tồn đọng mơ hồ (`[[product/thuat-ngu#Meeting Debt|Meeting Debt]]`).

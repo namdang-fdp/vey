@@ -51,7 +51,7 @@ title: Bức tranh cạnh tranh (Competitive Landscape)
 Qua research công khai hiện tại, các năng lực sau chưa thấy được đặt làm trọng tâm rõ ràng ở các sản phẩm đã xem xét:
 
 1. **H1 — Closure**: Đảm bảo cuộc họp đạt đủ điều kiện kết thúc dựa trên observable conditions, chủ động ngăn ngừa `[[product/thuat-ngu#Meeting Debt|Meeting Debt]]`.
-2. **H2 — Continuity**: Tái dựng chuỗi nhân quả (causal chain) để giải thích tường minh lý do tại sao một vấn đề phải họp lại trong cùng một `[[product/thuat-ngu#Thread|Thread]]`.
+2. **H2 — Continuity**: Tái dựng chuỗi nhân quả (causal chain) để giải thích tường minh lý do tại sao một vấn đề phải họp lại trong cùng một luồng công việc / chủ đề thảo luận (candidate abstraction: `[[product/thuat-ngu#Thread|Thread]]`).
 3. **H3 — Reconciliation**: Đối soát hai chiều giữa quyết định (`[[product/thuat-ngu#Decision|Decision]]`) và diễn biến thực thi trên Jira, GitHub, Slack.
 
 ---
