@@ -8,34 +8,38 @@ Tài liệu này xác định vị thế chiến lược của Vey bằng cách 
 
 ---
 
-## 1. Năng lực Phổ thông (Market Baseline)
+## 1. Năng lực Nền tảng vs Khác biệt hóa (Foundation vs Differentiation)
 
-Các năng lực sau **không được xem là moat (hào kinh tế) của Vey**:
-* Meeting recording (ghi âm)
-* Transcription (chuyển giọng nói thành văn bản)
+### Năng lực Nền tảng (Meeting Platform Foundation — Table Stakes)
+
+Các năng lực sau **không được xem là moat (hào kinh tế) của Vey, nhưng là nền tảng sản phẩm bắt buộc (table stakes)** để sản phẩm hoàn chỉnh và tự tạo ra luồng dữ liệu thật:
+* Calendar integration (kết nối lịch họp)
+* Meeting lifecycle (vòng đời cuộc họp)
+* Real meeting capture & recording (thu nhận và ghi âm cuộc họp thực tế)
+* Transcription (chuyển giọng nói thành văn bản — tận dụng provider/speech platform phù hợp, không cần xây dựng custom ASR model từ đầu)
 * Speaker diarization (nhận diện người nói)
 * Timestamps (mốc thời gian phát biểu)
-* Multilingual transcription/translation (phiên âm/dịch đa ngôn ngữ)
 * Searchable transcript (tìm kiếm toàn văn bản ghi)
-* AI summaries (tóm tắt cuộc họp tự động)
-* Meeting templates (khung mẫu biên bản)
+* Multilingual support (hỗ trợ đa ngôn ngữ khi scope phù hợp)
+* Meeting workspace / library (thư viện và không gian lưu trữ cuộc họp)
+* Meeting search (tìm kiếm cuộc họp theo ngữ cảnh/từ khóa)
+* Meeting summary & templates (tóm tắt cuộc họp và khung mẫu)
 * Basic action item extraction (trích xuất đầu việc cơ bản)
 * Basic decision extraction (trích xuất quyết định dạng văn bản tĩnh)
-* Meeting library (thư viện lưu trữ cuộc họp)
-* Meeting search (tìm kiếm meeting theo từ khóa)
-* Calendar integration (kết nối lịch họp)
 * Meeting Q&A (hỏi đáp nội dung cuộc họp)
-* Cross-meeting memory ở mức cơ bản
+* Baseline UX đủ để sử dụng Vey như một meeting product thật
 
-> [!important] Định vị chiến lược
-> **Cross-meeting memory một mình không phải là moat.**
-> Vey sau này có thể tích hợp các năng lực trên như điều kiện cần (table stakes) để trở thành công cụ làm việc hàng ngày, nhưng chúng hoàn toàn **không phải** là differentiated thesis ban đầu của sản phẩm.
+> [!important] Định vị chiến lược & Nguyên tắc cốt lõi
+> **Vey Core là differentiation. Meeting Platform là product foundation bắt buộc. Commodity ≠ optional.**
+> * Vey không clone Fireflies/Otter về mặt differentiated thesis, nhưng **không bỏ qua hay trì hoãn vô thời hạn** các capability cơ bản của một meeting platform.
+> * Vey Core cần first-party meeting data, meeting lifecycle và product workflow thực tế. Nếu chỉ upload audio/transcript giả lập rồi xây intelligence layer thì validation không đủ thực tế.
+> * **Upload/import**: Upload audio, import transcript hoặc webhook import là capability hữu ích cho testing, migration, dữ liệu lịch sử và fallback, nhưng **không phải primary product path** và không được dùng làm lý do để né real meeting capture.
 
 ---
 
-## 2. Giả thuyết Khác biệt cốt lõi (Differentiated Hypotheses)
+## 2. Giả thuyết Khác biệt cốt lõi (Vey Core — Differentiated Hypotheses)
 
-Vey tập trung toàn bộ nguồn lực ban đầu để kiểm chứng ba giả thuyết cốt lõi:
+Sau khi Meeting Platform Foundation tạo được luồng dữ liệu thật đủ tin cậy, Vey tập trung kiểm chứng ba giả thuyết cốt lõi cấu thành Vey Core:
 
 ### H1: Meeting Closure (Đóng phiên Cuộc họp)
 * **Câu hỏi định tâm**: *Cuộc họp này đã đủ điều kiện kết thúc chưa?*

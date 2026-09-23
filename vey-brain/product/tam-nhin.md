@@ -16,9 +16,9 @@ title: Tầm nhìn sản phẩm (Product Vision)
 ## 1. Bối cảnh & Không gian Vấn đề (Problem Space)
 
 ### Thực trạng thị trường
-Công nghệ ghi âm (recording), chuyển giọng nói thành văn bản (transcription) và tóm tắt tự động (AI summarization) đã trở thành năng lực phổ thông (commodity). Hàng chục công cụ có thể tham gia cuộc họp và tạo ra một biên bản tóm tắt gồm các gạch đầu dòng và danh sách action items.
+Công nghệ ghi âm (recording), chuyển giọng nói thành văn bản (transcription) và tóm tắt tự động (AI summarization) đã trở thành năng lực phổ thông (commodity). Tuy nhiên, **commodity không đồng nghĩa với tùy chọn (commodity ≠ optional)**: đây là nền tảng sản phẩm bắt buộc (table stakes) để Vey vận hành như một meeting product thật và tự tạo ra luồng dữ liệu first-party tin cậy.
 
-Tuy nhiên, hầu hết các giải pháp hiện tại đều xem cuộc họp là **những sự kiện cô lập (isolated events)**:
+Sự khác biệt cốt lõi của Vey bắt đầu từ việc giải quyết giới hạn lớn nhất của thị trường: hầu hết các giải pháp hiện tại đều xem cuộc họp là **những sự kiện cô lập (isolated events)**:
 1. Cuộc họp diễn ra $\rightarrow$ Biên bản được tạo ra $\rightarrow$ Biên bản trôi vào Slack, email hoặc tài liệu tĩnh.
 2. Công việc thực tế tiếp tục vận hành trên các công cụ chuyên trách: Jira, GitHub, Notion, Slack.
 3. Không có bất kỳ hệ thống nào theo dõi, liên kết và kiểm chứng xem những gì được thống nhất trong cuộc họp có thực sự được duy trì và thực thi ngoài đời thực hay không.

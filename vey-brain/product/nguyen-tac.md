@@ -114,7 +114,15 @@ Cần phân biệt rạch ròi giữa hai tầng công nghệ:
 
 ---
 
-## 9. Liên kết liên quan
+## 9. Vey Core là Differentiation, Meeting Platform là Foundation bắt buộc (Commodity ≠ Optional)
+
+Các năng lực phổ thông của một meeting platform (calendar, capture/recording, transcription, diarization, summary, search) không phải là moat của Vey, nhưng là **table stakes bắt buộc** để sản phẩm hoàn chỉnh và tự tạo dữ liệu thật:
+* Vey Core (`Meeting Closure`, `Continuity`, `Reconciliation`) cần first-party meeting data, meeting lifecycle và workflow thực tế để kiểm chứng giá trị.
+* Upload audio hoặc import transcript chỉ là cơ chế hỗ trợ (testing, migration, dữ liệu lịch sử, fallback), không phải primary product path và không dùng để né real meeting capture.
+
+---
+
+## 10. Liên kết liên quan
 
 * [[product/tam-nhin|Tầm nhìn sản phẩm]]
 * [[product/luan-de-san-pham|Luận đề sản phẩm]]
