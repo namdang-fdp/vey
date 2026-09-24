@@ -6,7 +6,7 @@ title: Mô hình miền & Work Context Graph (Working Domain Model)
 
 > [!important] Tình trạng kiến trúc & Giới hạn
 > * Đây là **mô hình miền làm việc (working domain model)** và **mô hình biểu diễn khái niệm (conceptual model)** nhằm phân tích bài toán và kiểm chứng các giả thuyết MVP.
-> * **Chưa lựa chọn cơ sở dữ liệu** cụ thể (chưa chốt Relational, Document hay Graph).
+> * **Decision (VEY-1):** PostgreSQL 18.6 là persistence foundation ban đầu. Cách biểu diễn Work Context Graph trong storage vẫn đang mở; chưa chốt Graph Database.
 > * Khái niệm *Work Context Graph* **không đồng nghĩa** với việc đã quyết định sử dụng Graph Database.
 > * **Chưa quyết định Event Sourcing**.
 
@@ -132,7 +132,7 @@ Active
 > 1. **Cấu trúc Dữ liệu của `Thread`**:
 >    * Container phân cấp cứng hay đồ thị mềm liên kết động?
 > 2. **Chiến lược Lưu trữ (`Storage Paradigm`)**:
->    * Mô hình dữ liệu của Vey kết hợp giữa văn bản bán cấu trúc (transcript), thực thể trạng thái (Decision, Action) và đồ thị quan hệ (Work Context Graph). Cần lựa chọn Relational DB (PostgreSQL), Graph DB hay Document Store dựa trên query pattern của Closure & Reconciliation?
+>    * Mô hình dữ liệu của Vey kết hợp giữa văn bản bán cấu trúc (transcript), thực thể trạng thái (Decision, Action) và đồ thị quan hệ (Work Context Graph). Sau PostgreSQL foundation của VEY-1, cần xác minh cách biểu diễn và query pattern của Closure & Reconciliation trước khi quyết định có cần Graph DB hay Document Store bổ sung không.
 > 3. **Cơ chế Quản lý Biến đổi Trạng thái (`State Tracking`)**:
 >    * Áp dụng Event Sourcing toàn phần cho `State Change` hay sử dụng bảng Audit Log/History giản dị để tránh over-engineering ở giai đoạn MVP?
 > 4. **Mô hình Tích hợp Ngoại vi (`Integration Mechanics`)**:
