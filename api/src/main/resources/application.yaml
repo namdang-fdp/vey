@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: vey-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:55432/vey_db}
+    username: ${SPRING_DATASOURCE_USERNAME:vey}
+    password: ${SPRING_DATASOURCE_PASSWORD:vey_local_password}
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:56379}
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:59092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+vey:
+  cors:
+    allowed-origin: ${VEY_CORS_ALLOWED_ORIGIN:http://localhost:3000}
+  storage:
+    endpoint: ${VEY_STORAGE_ENDPOINT:http://localhost:59000}
+    region: ${VEY_STORAGE_REGION:us-east-1}
+    access-key: ${VEY_STORAGE_ACCESS_KEY:vey-local}
+    secret-key: ${VEY_STORAGE_SECRET_KEY:vey-local-password}
+    bucket: ${VEY_STORAGE_BUCKET:vey-media}
+org:
+  jobrunr:
+    database:
+      skip-create: false
+    background-job-server:
+      enabled: true
+    dashboard:
+      enabled: ${VEY_JOBRUNR_DASHBOARD_ENABLED:false}
+      port: 8000
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+server:
+  port: ${SERVER_PORT:8081}
