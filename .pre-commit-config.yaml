@@ -1,0 +1,36 @@
+minimum_pre_commit_version: "3.6.0"
+default_stages: [pre-commit]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+      - id: detect-private-key
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        args: ["protect", "--redact", "--staged"]
+  - repo: local
+    hooks:
+      - id: backend-check
+        name: backend format and Checkstyle
+        entry: bash scripts/precommit-backend.sh
+        language: system
+        pass_filenames: false
+      - id: frontend-check
+        name: frontend lint and typecheck
+        entry: bash scripts/precommit-frontend.sh
+        language: system
+        pass_filenames: false
+      - id: conventional-commit
+        name: conventional commit message
+        entry: bash scripts/commit-msg.sh
+        language: system
+        stages: [commit-msg]

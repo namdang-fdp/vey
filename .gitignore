@@ -1,0 +1,20 @@
+# Local configuration and build output
+.env
+.env.*
+!.env.example
+**/target/
+**/node_modules/
+**/.next/
+**/.cache/
+**/coverage/
+**/playwright-report/
+**/test-results/
+**/*.tsbuildinfo
+.idea/
+.vscode/
+.DS_Store
+# Obsidian
+vey-brain/.obsidian/workspace.json
+vey-brain/.obsidian/workspace-mobile.json
+api/.env
+frontend/.env
