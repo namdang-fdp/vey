@@ -13,6 +13,10 @@
 .idea/
 .vscode/
 .DS_Store
+.project
+.classpath
+.factorypath
+.settings/
 # Obsidian
 vey-brain/.obsidian/workspace.json
 vey-brain/.obsidian/workspace-mobile.json
