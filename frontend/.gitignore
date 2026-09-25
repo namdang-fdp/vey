@@ -1,12 +1,11 @@
 node_modules/
 .next/
+.env*
+!.env.example
+.clerk/
+next-env.d.ts
+*.tsbuildinfo
 .cache/
 coverage/
 playwright-report/
 test-results/
-*.tsbuildinfo
-.env*
-!.env.example
-.clerk/
-*.tsbuildinfo
-next-env.d.ts
