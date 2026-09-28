@@ -1,15 +1,12 @@
 "use client";
 import { getApiBaseUrl } from "./config";
 import { createApiTransport } from "./transport";
-import type { AuthHeadersProvider } from "./types";
-/** Create at the application auth integration boundary, never inside individual components. */
-export function createBrowserApiClient(authHeaders?: AuthHeadersProvider) {
-  const transport = createApiTransport({
-    baseUrl: getApiBaseUrl(),
-    authHeaders,
-  });
+import type { ApiRequest } from "./types";
+/** Browser requests use the future Vey HttpOnly session cookie via Axios credentials. */
+export function createBrowserApiClient() {
+  const transport = createApiTransport({ baseUrl: getApiBaseUrl() });
   return {
-    request: <T>(path: string, options: import("./types").ApiRequest<T>) =>
+    request: <T>(path: string, options: ApiRequest<T>) =>
       transport.request(path, options),
   };
 }
