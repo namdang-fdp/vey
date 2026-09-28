@@ -1,49 +1,60 @@
-import { ApiConfigurationError, ApiError } from "./errors";
-import type { ApiClient, AuthHeadersProvider, Fetcher } from "./types";
+import axios, { isAxiosError, type AxiosInstance } from "axios";
+import { ApiConfigurationError, ApiError, ApiNetworkError } from "./errors";
+import type { ApiClient } from "./types";
+
+const REQUEST_TIMEOUT_MS = 10_000;
+
+export function createAxiosInstance(baseUrl: string): AxiosInstance {
+  return axios.create({
+    baseURL: baseUrl,
+    withCredentials: true,
+    timeout: REQUEST_TIMEOUT_MS,
+    headers: { Accept: "application/json" },
+  });
+}
+
 export function createApiTransport(config: {
   baseUrl?: string;
-  authHeaders?: AuthHeadersProvider;
-  fetcher?: Fetcher;
+  axiosInstance?: AxiosInstance;
 }): ApiClient {
+  if (!config.baseUrl) {
+    return {
+      async request() {
+        throw new ApiConfigurationError();
+      },
+    };
+  }
+
+  const baseUrl = new URL(config.baseUrl);
+  const axiosInstance =
+    config.axiosInstance ?? createAxiosInstance(baseUrl.href);
+
   return {
-    async request(path, { decode, headers, ...options }) {
-      if (!config.baseUrl) throw new ApiConfigurationError();
+    async request(path, { decode, body, ...options }) {
       // Relative paths only: credentials must never be forwarded to a supplied origin.
       if (!path.startsWith("/") || path.startsWith("//") || path.includes("\\"))
         throw new TypeError("API path must start with a single slash.");
-      const base = new URL(config.baseUrl);
-      const url = new URL(base.pathname.replace(/\/$/, "") + path, base.origin);
-      if (url.origin !== base.origin)
-        throw new TypeError("API path must stay on the configured origin.");
-      const requestHeaders = new Headers(await config.authHeaders?.());
-      new Headers(headers).forEach((value, key) =>
-        requestHeaders.set(key, value),
-      );
-      const response = await (config.fetcher ?? fetch)(url, {
-        ...options,
-        headers: requestHeaders,
-      });
-      const text = response.status === 204 ? "" : await response.text();
-      let body: unknown = text || undefined;
-      if (text && response.headers.get("content-type")?.includes("json")) {
-        try {
-          body = JSON.parse(text);
-        } catch {
-          if (response.ok)
+
+      try {
+        const response = await axiosInstance.request<unknown>({
+          ...options,
+          url: path,
+          data: body,
+        });
+        return decode(response.status === 204 ? undefined : response.data);
+      } catch (cause) {
+        if (isAxiosError(cause)) {
+          if (cause.response) {
             throw new ApiError(
-              "Invalid JSON response.",
-              response.status,
-              undefined,
+              `Request failed (${cause.response.status}).`,
+              cause.response.status,
+              cause.response.data,
             );
+          }
+          throw new ApiNetworkError();
         }
+        throw cause;
       }
-      if (!response.ok)
-        throw new ApiError(
-          `Request failed (${response.status}).`,
-          response.status,
-          body,
-        );
-      return decode(body);
     },
   };
 }

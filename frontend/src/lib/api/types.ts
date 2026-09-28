@@ -1,12 +1,12 @@
-/** Auth integration supplies headers without exposing token storage to features. */
-export type AuthHeadersProvider = () => HeadersInit | Promise<HeadersInit>;
-export type Fetcher = (
-  input: RequestInfo | URL,
-  init?: RequestInit,
-) => Promise<Response>;
+import type { AxiosRequestConfig } from "axios";
+
 export type ResponseDecoder<T> = (value: unknown) => T;
-export type ApiRequest<T> = Omit<RequestInit, "body"> & {
-  body?: BodyInit | null;
+
+export type ApiRequest<T> = Omit<
+  AxiosRequestConfig,
+  "baseURL" | "data" | "url" | "withCredentials"
+> & {
+  body?: AxiosRequestConfig["data"];
   decode: ResponseDecoder<T>;
 };
 export interface ApiClient {

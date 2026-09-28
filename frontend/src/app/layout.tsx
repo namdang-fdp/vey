@@ -1,5 +1,5 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import Link from "next/link";
 import localFont from "next/font/local";
 import "./globals.css";
 import { site } from "@/config/site";
@@ -25,6 +25,9 @@ const albertSans = localFont({
 export const metadata: Metadata = {
   title: { default: site.name, template: `%s | ${site.name}` },
   description: site.description,
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -35,39 +38,17 @@ export default function RootLayout({
       <body
         className={`${albertSans.variable} min-h-screen bg-background font-sans text-foreground antialiased`}
       >
-        <AppProviders>
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:p-3"
-          >
-            Skip to content
-          </a>
-          <header className="border-b border-border bg-card">
-            <nav
-              aria-label="Main navigation"
-              className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-8 gap-y-2 px-5 py-4"
+        <ClerkProvider afterSignOutUrl="/login">
+          <AppProviders>
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:p-3"
             >
-              <Link
-                href="/"
-                className="mr-auto text-xl font-semibold tracking-tight"
-              >
-                Vey
-              </Link>
-              <Link href="/" className="text-sm hover:underline">
-                Home
-              </Link>
-              <Link href="/meetings" className="text-sm hover:underline">
-                Meetings
-              </Link>
-              <Link href="/settings" className="text-sm hover:underline">
-                Settings
-              </Link>
-            </nav>
-          </header>
-          <main id="main-content" className="mx-auto max-w-5xl px-5 py-12">
+              Skip to content
+            </a>
             {children}
-          </main>
-        </AppProviders>
+          </AppProviders>
+        </ClerkProvider>
       </body>
     </html>
   );
