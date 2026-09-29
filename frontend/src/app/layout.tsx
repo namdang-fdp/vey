@@ -1,4 +1,3 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -23,13 +22,20 @@ const albertSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: site.name, template: `%s | ${site.name}` },
+  title: {
+    default: site.name,
+    template: `%s | ${site.name}`,
+  },
   description: site.description,
   icons: {
-    icon: "/icon.svg",
+    icon: [
+      {
+        url: "/brand/vey-mark.svg",
+        type: "image/svg+xml",
+      },
+    ],
   },
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -38,17 +44,7 @@ export default function RootLayout({
       <body
         className={`${albertSans.variable} min-h-screen bg-background font-sans text-foreground antialiased`}
       >
-        <ClerkProvider afterSignOutUrl="/login">
-          <AppProviders>
-            <a
-              href="#main-content"
-              className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:p-3"
-            >
-              Skip to content
-            </a>
-            {children}
-          </AppProviders>
-        </ClerkProvider>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );
