@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { ApplicationNavigation } from "@/components/shell/application-navigation";
@@ -7,8 +6,6 @@ import { SignOutControl } from "@/features/auth/components/sign-out-control";
 export default async function ApplicationLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  await auth.protect();
-
   return (
     <div className="min-h-dvh bg-background md:grid md:grid-cols-[14.5rem_minmax(0,1fr)]">
       <aside className="hidden min-h-dvh flex-col border-r border-border bg-muted/60 px-3 py-4 md:flex">

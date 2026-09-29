@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 export function BrandLogo({
   markOnly = false,
@@ -19,6 +19,7 @@ export function BrandLogo({
         alt="Vey"
         width={markOnly ? 32 : 112}
         height={32}
+        loading="eager"
         sizes={markOnly ? "32px" : "112px"}
         className={cn("h-8 w-auto", markClassName)}
       />

@@ -1,14 +1,10 @@
 "use client";
 
-import { CalendarDays, Settings } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-
-const navigationItems = [
-  { href: "/meetings", label: "Meetings", icon: CalendarDays },
-  { href: "/settings", label: "Settings", icon: Settings },
-] as const;
+import { applicationNavigation } from "@/config/navigation";
 
 export function ApplicationNavigation({
   compact = false,
@@ -22,7 +18,7 @@ export function ApplicationNavigation({
       aria-label="Workspace navigation"
       className={cn(compact ? "flex min-w-0 items-center gap-1" : "space-y-1")}
     >
-      {navigationItems.map(({ href, label, icon: Icon }) => {
+      {applicationNavigation.map(({ href, label }) => {
         const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
         return (
@@ -38,7 +34,7 @@ export function ApplicationNavigation({
                 : "text-muted-foreground hover:bg-background hover:text-foreground",
             )}
           >
-            <Icon aria-hidden="true" className="size-4 shrink-0" />
+            <CalendarDays aria-hidden="true" className="size-4 shrink-0" />
             <span>{label}</span>
           </Link>
         );

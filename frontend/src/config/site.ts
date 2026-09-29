@@ -1,4 +1,4 @@
 export const site = {
   name: "Vey",
-  description: "Vey application workspace",
+  description: "A clear, connected record of meetings and decisions.",
 } as const;
