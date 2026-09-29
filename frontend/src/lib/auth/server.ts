@@ -22,6 +22,11 @@ export const auth = betterAuth({
   appName: "Vey",
   baseURL: process.env.BETTER_AUTH_URL,
   secret,
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: false,
+    autoSignIn: true,
+  },
   database: {
     dialect: new PostgresDialect({ pool }),
     type: "postgres",

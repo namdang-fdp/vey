@@ -1,12 +1,37 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/stores/auth-store";
+import { routes } from "@/config/routes";
+import { authClient } from "@/lib/auth/client";
+import { getAuthErrorMessage } from "../utils/get-auth-error-message";
+import { toast } from "sonner";
 
 export function SignOutControl({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const [isPending, setIsPending] = useState(false);
+
+  const signOut = async () => {
+    setIsPending(true);
+    try {
+      const { error } = await authClient.signOut();
+      if (error) {
+        toast.error(
+          getAuthErrorMessage(error, "Unable to sign out. Please try again."),
+        );
+        return;
+      }
+      router.replace(routes.login);
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        getAuthErrorMessage(error, "Unable to sign out. Please try again."),
+      );
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return (
     <Button
@@ -14,12 +39,10 @@ export function SignOutControl({ compact = false }: { compact?: boolean }) {
       variant="ghost"
       size={compact ? "icon" : "sm"}
       aria-label={compact ? "Sign out" : undefined}
-      onClick={() => {
-        clearSession();
-        router.replace("/login");
-      }}
+      disabled={isPending}
+      onClick={signOut}
     >
-      {compact ? "↪" : "Sign out"}
+      {compact ? "↪" : isPending ? "Signing out..." : "Sign out"}
     </Button>
   );
 }

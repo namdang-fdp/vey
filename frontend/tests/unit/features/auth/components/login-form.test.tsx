@@ -1,39 +1,26 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LoginForm } from "@/features/auth/components/login-form";
-import { login } from "@/features/auth/api/login";
-import { useAuthStore } from "@/stores/auth-store";
 
-const { replace, toastError } = vi.hoisted(() => ({
+const { replace, refresh, signInEmail, toastError } = vi.hoisted(() => ({
   replace: vi.fn(),
+  refresh: vi.fn(),
+  signInEmail: vi.fn(),
   toastError: vi.fn(),
 }));
 
-vi.mock("@/features/auth/api/login", () => ({ login: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
+vi.mock("@/lib/auth/client", () => ({
+  authClient: { signIn: { email: signInEmail } },
+}));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh }) }));
 vi.mock("sonner", () => ({ toast: { error: toastError } }));
 
-function renderLoginForm() {
-  const queryClient = new QueryClient({
-    defaultOptions: { mutations: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <LoginForm />
-    </QueryClientProvider>,
-  );
-}
-
 describe("LoginForm", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.getState().clearSession();
-  });
+  beforeEach(() => vi.clearAllMocks());
 
-  it("validates credentials, calls Login, stores its token and redirects", async () => {
-    vi.mocked(login).mockResolvedValue({ accessToken: "test-token" });
-    renderLoginForm();
+  it("signs in with Better Auth and redirects after success", async () => {
+    signInEmail.mockResolvedValue({ data: { token: "opaque" }, error: null });
+    render(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText("Email address"), {
       target: { value: "  Candidate@Example.com " },
@@ -44,23 +31,21 @@ describe("LoginForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() =>
-      expect(vi.mocked(login).mock.calls[0]?.[0]).toEqual({
+      expect(signInEmail).toHaveBeenCalledWith({
         email: "Candidate@Example.com",
         password: "passphrase",
       }),
     );
-    expect(useAuthStore.getState().accessToken).toBe("test-token");
     expect(replace).toHaveBeenCalledWith("/meetings");
+    expect(refresh).toHaveBeenCalled();
   });
 
-  it("shows normalized backend errors through Sonner", async () => {
-    vi.mocked(login).mockRejectedValue({
-      isAxiosError: true,
-      response: {
-        data: { success: false, error: { message: "Invalid credentials." } },
-      },
+  it("shows a friendly Better Auth error without redirecting", async () => {
+    signInEmail.mockResolvedValue({
+      data: null,
+      error: { code: "INVALID_EMAIL_OR_PASSWORD" },
     });
-    renderLoginForm();
+    render(<LoginForm />);
     fireEvent.change(screen.getByLabelText("Email address"), {
       target: { value: "candidate@example.com" },
     });
@@ -70,14 +55,29 @@ describe("LoginForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith("Invalid credentials."),
+      expect(toastError).toHaveBeenCalledWith(
+        "Email or password is incorrect.",
+      ),
     );
-    expect(useAuthStore.getState().accessToken).toBeNull();
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("links all provider choices to their preview routes", () => {
-    renderLoginForm();
+  it("keeps email and password validation on the form", async () => {
+    render(<LoginForm />);
+    fireEvent.change(screen.getByLabelText("Email address"), {
+      target: { value: "invalid-email" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(
+      await screen.findByText("Please enter a valid email address"),
+    ).toBeVisible();
+    expect(await screen.findByText("Password is required")).toBeVisible();
+    expect(signInEmail).not.toHaveBeenCalled();
+  });
+
+  it("keeps provider choices on their preview routes", () => {
+    render(<LoginForm />);
     expect(
       screen.getByRole("link", { name: "Continue with Google" }),
     ).toHaveAttribute("href", "/login/oauth/google");

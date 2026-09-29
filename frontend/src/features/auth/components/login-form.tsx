@@ -9,18 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { routes } from "@/config/routes";
-import { useAuthStore } from "@/stores/auth-store";
+import { authClient } from "@/lib/auth/client";
+import { getAuthErrorMessage } from "../utils/get-auth-error-message";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { isAxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { login } from "../api/login";
-import { loginSchema, type LoginFormValues } from "../api/login-schema";
+import { loginSchema, type LoginFormValues } from "../schemas/login-schema";
 
 const providers = [
   {
@@ -43,29 +41,9 @@ const providers = [
   },
 ] as const;
 
-function getLoginErrorMessage(error: unknown) {
-  if (isAxiosError(error)) {
-    const data: unknown = error.response?.data;
-    if (
-      data &&
-      typeof data === "object" &&
-      "error" in data &&
-      data.error &&
-      typeof data.error === "object" &&
-      "message" in data.error &&
-      typeof data.error.message === "string"
-    ) {
-      return data.error.message;
-    }
-  }
-  return "Unable to sign in. Please check your connection and try again.";
-}
-
 export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-  const setAccessToken = useAuthStore((state) => state.setAccessToken);
-  const loginMutation = useMutation({ mutationFn: login });
   const {
     register,
     handleSubmit,
@@ -75,15 +53,29 @@ export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
     defaultValues: { email: defaultEmail, password: "" },
     mode: "onTouched",
   });
-  const isPending = isSubmitting || loginMutation.isPending;
+  const isPending = isSubmitting;
 
   const submit = async (values: LoginFormValues) => {
     try {
-      const result = await loginMutation.mutateAsync(values);
-      setAccessToken(result.accessToken);
+      const { error } = await authClient.signIn.email(values);
+      if (error) {
+        toast.error(
+          getAuthErrorMessage(
+            error,
+            "Unable to sign in. Please check your connection and try again.",
+          ),
+        );
+        return;
+      }
       router.replace(routes.meetings);
+      router.refresh();
     } catch (error) {
-      toast.error(getLoginErrorMessage(error));
+      toast.error(
+        getAuthErrorMessage(
+          error,
+          "Unable to sign in. Please check your connection and try again.",
+        ),
+      );
     }
   };
 

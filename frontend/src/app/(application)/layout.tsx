@@ -2,10 +2,17 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { ApplicationNavigation } from "@/components/shell/application-navigation";
 import { SignOutControl } from "@/features/auth/components/sign-out-control";
+import { auth } from "@/lib/auth/server";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { routes } from "@/config/routes";
 
 export default async function ApplicationLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect(routes.login);
+
   return (
     <div className="min-h-dvh bg-background md:grid md:grid-cols-[14.5rem_minmax(0,1fr)]">
       <aside className="hidden min-h-dvh flex-col border-r border-border bg-muted/60 px-3 py-4 md:flex">

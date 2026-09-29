@@ -5,9 +5,10 @@ import { BrandLogo } from "@/components/brand/brand-logo";
 
 export interface LoginViewProps {
   children?: React.ReactNode;
+  label?: string;
 }
 
-export function LoginView({ children }: LoginViewProps) {
+export function LoginView({ children, label = "Sign in" }: LoginViewProps) {
   return (
     <main className="min-h-screen bg-[#fafafa] text-[#262626] antialiased">
       <div className="flex min-h-screen">
@@ -20,7 +21,7 @@ export function LoginView({ children }: LoginViewProps) {
           </header>
           <div className="mx-auto flex min-h-screen w-full max-w-140 flex-col justify-center px-6 py-10 sm:px-12 lg:px-16">
             <section
-              aria-label="Sign in"
+              aria-label={label}
               className="relative mx-auto w-full max-w-100 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500"
             >
               {children}

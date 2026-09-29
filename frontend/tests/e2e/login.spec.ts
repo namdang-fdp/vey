@@ -3,10 +3,10 @@ import { expect, test } from "@playwright/test";
 test("login validates locally and OAuth links provide review preview flows", async ({
   page,
 }) => {
-  const loginRequests: string[] = [];
+  const signInRequests: string[] = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/auth/login")
-      loginRequests.push(request.url());
+    if (new URL(request.url()).pathname === "/api/auth/sign-in/email")
+      signInRequests.push(request.url());
   });
 
   await page.goto("/login");
@@ -44,6 +44,6 @@ test("login validates locally and OAuth links provide review preview flows", asy
   await expect(
     page.getByText("Please enter a valid email address"),
   ).toBeVisible();
-  expect(loginRequests).toHaveLength(0);
+  expect(signInRequests).toHaveLength(0);
   await expect(page).toHaveURL(/\/login$/);
 });
