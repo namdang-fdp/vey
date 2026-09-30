@@ -31,7 +31,7 @@ describe("ApplicationLayout session protection", () => {
 
   it("renders the application shell for a valid session", async () => {
     getSession.mockResolvedValue({
-      user: { id: "user-1" },
+      user: { id: "user-1", name: "Vey User", email: "user@example.com" },
       session: { id: "session-1" },
     });
 

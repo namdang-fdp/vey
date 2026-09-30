@@ -6,9 +6,11 @@ function Toaster(props: ToasterProps) {
   return (
     <Sonner
       theme="light"
+      richColors
+      closeButton
       toastOptions={{
         classNames: {
-          toast: "border border-border bg-background text-foreground",
+          toast: "font-sans rounded-xl shadow-lg",
         },
       }}
       {...props}

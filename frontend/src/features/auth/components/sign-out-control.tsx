@@ -7,6 +7,7 @@ import { routes } from "@/config/routes";
 import { authClient } from "@/lib/auth/client";
 import { getAuthErrorMessage } from "../utils/get-auth-error-message";
 import { toast } from "sonner";
+import { LogOut } from "lucide-react";
 
 export function SignOutControl({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
@@ -41,8 +42,14 @@ export function SignOutControl({ compact = false }: { compact?: boolean }) {
       aria-label={compact ? "Sign out" : undefined}
       disabled={isPending}
       onClick={signOut}
+      className={
+        compact
+          ? "size-11"
+          : "h-11 w-full justify-start gap-3 rounded-xl px-3 text-muted-foreground hover:text-foreground"
+      }
     >
-      {compact ? "↪" : isPending ? "Signing out..." : "Sign out"}
+      <LogOut aria-hidden="true" className="size-4" />
+      {!compact && (isPending ? "Signing out..." : "Sign out")}
     </Button>
   );
 }

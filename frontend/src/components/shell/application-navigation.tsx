@@ -27,7 +27,7 @@ export function ApplicationNavigation({
             href={href}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[0.8125rem] font-medium outline-none transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-muted",
+              "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium outline-none transition-colors duration-[var(--duration-quick)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-muted",
               compact && "px-2 text-xs",
               isActive
                 ? "bg-primary-subtle text-on-primary-subtle"

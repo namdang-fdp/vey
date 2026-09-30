@@ -15,22 +15,21 @@ export function SiteShell({
     <>
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:block focus:p-4"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:p-4 focus:ring-2 focus:ring-ring"
       >
         Skip to content
       </a>
-      <header className="border-b">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-6 px-6 py-5">
+      <header className="border-b border-border bg-surface/90">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
           <Link href={routes.home} aria-label={`${site.name} home`}>
             <BrandLogo />
           </Link>
-          <span className="text-sm text-muted-foreground">{label}</span>
-          <nav aria-label={label} className="flex flex-wrap gap-4">
+          <nav aria-label={label} className="flex flex-wrap items-center gap-2">
             {navigation.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-sm text-sm underline-offset-4 hover:underline focus-visible:outline-2"
+                className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors duration-[var(--duration-quick)] hover:bg-primary-subtle hover:text-on-primary-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {item.label}
               </Link>
@@ -40,7 +39,7 @@ export function SiteShell({
       </header>
       <main
         id="main-content"
-        className="mx-auto max-w-6xl space-y-8 px-6 py-12"
+        className="mx-auto max-w-6xl space-y-8 px-5 py-10 sm:px-8 sm:py-16"
       >
         {children}
       </main>
