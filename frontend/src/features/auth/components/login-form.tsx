@@ -16,6 +16,7 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { loginSchema, type LoginFormValues } from "../schemas/login-schema";
@@ -23,27 +24,38 @@ import { loginSchema, type LoginFormValues } from "../schemas/login-schema";
 const providers = [
   {
     name: "Google",
-    href: routes.oauth.google,
+    provider: "google",
     Icon: GoogleIcon,
     iconClassName: "",
   },
   {
     name: "GitHub",
-    href: routes.oauth.github,
+    provider: "github",
     Icon: GitHubIcon,
     iconClassName: "",
   },
   {
     name: "Facebook",
-    href: routes.oauth.facebook,
+    provider: "facebook",
     Icon: FacebookIcon,
     iconClassName: "text-[#1877f2]",
   },
 ] as const;
 
-export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
+export function LoginForm({
+  defaultEmail = "",
+  oauthFailed = false,
+}: {
+  defaultEmail?: string;
+  oauthFailed?: boolean;
+}) {
   const [showPassword, setShowPassword] = useState(false);
+  const [pendingProvider, setPendingProvider] = useState<string | null>(null);
   const router = useRouter();
+  useEffect(() => {
+    if (oauthFailed)
+      toast.error("Social sign in did not complete. Please try again.");
+  }, [oauthFailed]);
   const {
     register,
     handleSubmit,
@@ -53,11 +65,15 @@ export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
     defaultValues: { email: defaultEmail, password: "" },
     mode: "onTouched",
   });
-  const isPending = isSubmitting;
+  const isPending = isSubmitting || pendingProvider !== null;
 
   const submit = async (values: LoginFormValues) => {
+    if (pendingProvider !== null) return;
     try {
-      const { error } = await authClient.signIn.email(values);
+      const { error } = await authClient.signIn.email({
+        ...values,
+        callbackURL: routes.meetings,
+      });
       if (error) {
         toast.error(
           getAuthErrorMessage(
@@ -79,6 +95,27 @@ export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
     }
   };
 
+  const signInWithProvider = async (
+    provider: "google" | "github" | "facebook",
+    name: string,
+  ) => {
+    if (isPending) return;
+    setPendingProvider(provider);
+    try {
+      const { error } = await authClient.signIn.social({
+        provider,
+        callbackURL: routes.meetings,
+        errorCallbackURL: `${routes.login}?oauth=failed`,
+      });
+      if (error)
+        toast.error(`Unable to continue with ${name}. Please try again.`);
+    } catch {
+      toast.error(`Unable to continue with ${name}. Please try again.`);
+    } finally {
+      setPendingProvider(null);
+    }
+  };
+
   return (
     <div className="w-full">
       <header className="mb-7 text-center motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
@@ -91,19 +128,20 @@ export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
       </header>
 
       <div className="grid grid-cols-1 gap-3 min-[520px]:grid-cols-3">
-        {providers.map(({ name, href, Icon, iconClassName = "" }) => (
+        {providers.map(({ name, provider, Icon, iconClassName = "" }) => (
           <Button
             key={name}
-            asChild
+            type="button"
+            onClick={() => void signInWithProvider(provider, name)}
+            disabled={isPending}
+            aria-label={`Continue with ${name}`}
             variant="outline"
             className="group h-12 w-full rounded-xl border-[#dbdbdb] bg-white px-2 text-sm font-medium text-[#262626] shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-200 hover:border-[#b5b5b5] hover:bg-[#fafafa] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] active:scale-[0.99]"
           >
-            <Link href={href} aria-label={`Continue with ${name}`}>
-              <Icon
-                className={`size-4 shrink-0 transition-transform duration-200 group-hover:scale-110 ${iconClassName}`}
-              />
-              <span>{name}</span>
-            </Link>
+            <Icon
+              className={`size-4 shrink-0 transition-transform duration-200 group-hover:scale-110 ${iconClassName}`}
+            />
+            <span>{name}</span>
           </Button>
         ))}
       </div>

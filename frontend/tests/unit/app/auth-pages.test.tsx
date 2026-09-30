@@ -22,7 +22,9 @@ describe("implemented auth page redirects", () => {
   it("sends an authenticated visitor from login to meetings", async () => {
     getSession.mockResolvedValue({ user: { id: "user-1" } });
 
-    await expect(LoginPage()).rejects.toThrow("NEXT_REDIRECT");
+    await expect(
+      LoginPage({ searchParams: Promise.resolve({}) }),
+    ).rejects.toThrow("NEXT_REDIRECT");
 
     expect(doRedirect).toHaveBeenCalledWith("/meetings");
   });

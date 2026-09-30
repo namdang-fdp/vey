@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("login validates locally and OAuth links provide review preview flows", async ({
+test("login exposes real social actions and validates credentials locally", async ({
   page,
 }) => {
   const signInRequests: string[] = [];
@@ -10,34 +10,12 @@ test("login validates locally and OAuth links provide review preview flows", asy
   });
 
   await page.goto("/login");
-
-  // Verify interactive OAuth preview links are present.
   for (const provider of ["Google", "GitHub", "Facebook"]) {
     await expect(
-      page.getByRole("link", { name: `Continue with ${provider}` }),
+      page.getByRole("button", { name: `Continue with ${provider}` }),
     ).toBeVisible();
   }
 
-  for (const provider of ["google", "github", "facebook"] as const) {
-    const label = provider[0].toUpperCase() + provider.slice(1);
-    await page.getByRole("link", { name: `Continue with ${label}` }).click();
-    await expect(page).toHaveURL(new RegExp(`/login/oauth/${provider}$`));
-    await expect(page.getByText("Authorization Preview")).toBeVisible();
-    await expect(
-      page.getByText("OAuth sign-in is not connected yet.").first(),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: `Preview ${label} handoff` }),
-    ).toBeVisible();
-    await page
-      .getByRole("button", { name: `Preview ${label} handoff` })
-      .click();
-    await expect(page.getByText("Handoff Preview:")).toBeVisible();
-    await page.getByRole("link", { name: "Back to sign in" }).click();
-    await expect(page).toHaveURL(/\/login$/);
-  }
-
-  // Form local validation
   await page.getByLabel("Email address").fill("invalid-email");
   await page.getByLabel("Password", { exact: true }).fill("simple");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
@@ -45,5 +23,15 @@ test("login validates locally and OAuth links provide review preview flows", asy
     page.getByText("Please enter a valid email address"),
   ).toBeVisible();
   expect(signInRequests).toHaveLength(0);
-  await expect(page).toHaveURL(/\/login$/);
+});
+
+test("forgot and reset pages show safe recovery states", async ({ page }) => {
+  await page.goto("/forgot-password");
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(page.getByText("Email address is required")).toBeVisible();
+  await page.goto("/reset-password");
+  await expect(page.getByText("Reset link unavailable")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Request a new link" }),
+  ).toHaveAttribute("href", "/forgot-password");
 });

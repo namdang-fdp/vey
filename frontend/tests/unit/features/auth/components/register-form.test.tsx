@@ -2,18 +2,20 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RegisterForm } from "@/features/auth/components/register-form";
 
-const { replace, refresh, signUpEmail, toastError } = vi.hoisted(() => ({
-  replace: vi.fn(),
-  refresh: vi.fn(),
-  signUpEmail: vi.fn(),
-  toastError: vi.fn(),
-}));
+const { signUpEmail, sendVerificationEmail, toastError, toastSuccess } =
+  vi.hoisted(() => ({
+    signUpEmail: vi.fn(),
+    sendVerificationEmail: vi.fn(),
+    toastError: vi.fn(),
+    toastSuccess: vi.fn(),
+  }));
 
 vi.mock("@/lib/auth/client", () => ({
-  authClient: { signUp: { email: signUpEmail } },
+  authClient: { signUp: { email: signUpEmail }, sendVerificationEmail },
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh }) }));
-vi.mock("sonner", () => ({ toast: { error: toastError } }));
+vi.mock("sonner", () => ({
+  toast: { error: toastError, success: toastSuccess },
+}));
 
 function fillRegistration(
   options: {
@@ -73,8 +75,8 @@ describe("RegisterForm", () => {
     expect(signUpEmail).not.toHaveBeenCalled();
   });
 
-  it("creates the account with Better Auth and redirects after success", async () => {
-    signUpEmail.mockResolvedValue({ data: { token: "opaque" }, error: null });
+  it("creates the account and shows check-email without redirect", async () => {
+    signUpEmail.mockResolvedValue({ data: { token: null }, error: null });
     render(<RegisterForm />);
     fillRegistration({ name: "  Vey User  " });
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
@@ -84,10 +86,22 @@ describe("RegisterForm", () => {
         name: "Vey User",
         email: "user@example.com",
         password: "password123",
+        callbackURL: "/meetings",
       }),
     );
-    expect(replace).toHaveBeenCalledWith("/meetings");
-    expect(refresh).toHaveBeenCalled();
+    expect(screen.getByText("Check your email")).toBeVisible();
+    expect(screen.getByText("user@example.com")).toBeVisible();
+    sendVerificationEmail.mockResolvedValue({ error: null });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Resend verification email" }),
+    );
+    await waitFor(() =>
+      expect(sendVerificationEmail).toHaveBeenCalledWith({
+        email: "user@example.com",
+        callbackURL: "/meetings",
+      }),
+    );
+    expect(toastSuccess).toHaveBeenCalled();
   });
 
   it("maps duplicate email errors to friendly copy", async () => {
@@ -104,6 +118,22 @@ describe("RegisterForm", () => {
         "An account with this email already exists. Try signing in.",
       ),
     );
-    expect(replace).not.toHaveBeenCalled();
+    expect(screen.queryByText("Check your email")).not.toBeInTheDocument();
+  });
+
+  it("shows a generic error when verification resend fails", async () => {
+    signUpEmail.mockResolvedValue({ data: { token: null }, error: null });
+    sendVerificationEmail.mockResolvedValue({ error: { status: 429 } });
+    render(<RegisterForm />);
+    fillRegistration();
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Resend verification email" }),
+    );
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(
+        "Unable to resend the verification email right now. Please try again later.",
+      ),
+    );
   });
 });

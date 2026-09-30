@@ -21,6 +21,8 @@ export function getAuthErrorMessage(error: unknown, fallback: string) {
       return "Please enter a valid email address.";
     case "INVALID_PASSWORD":
       return "Please choose a password with at least 8 characters.";
+    case "EMAIL_NOT_VERIFIED":
+      return "Please verify your email before signing in. Check your inbox for a verification link.";
     default:
       return fallback;
   }

@@ -7,9 +7,4 @@ export const routes = {
   resetPassword: "/reset-password",
   terms: "/terms",
   privacy: "/privacy",
-  oauth: {
-    google: "/login/oauth/google",
-    github: "/login/oauth/github",
-    facebook: "/login/oauth/facebook",
-  },
 } as const;

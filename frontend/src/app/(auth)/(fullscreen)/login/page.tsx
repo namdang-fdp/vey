@@ -11,13 +11,18 @@ export const metadata: Metadata = {
   description: "Sign in to your Vey account.",
 };
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ oauth?: string }>;
+}) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (session) redirect(routes.meetings);
+  const oauthFailed = (await searchParams)?.oauth === "failed";
 
   return (
     <LoginView>
-      <LoginForm />
+      <LoginForm oauthFailed={oauthFailed} />
     </LoginView>
   );
 }

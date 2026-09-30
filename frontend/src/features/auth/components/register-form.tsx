@@ -6,7 +6,7 @@ import { routes } from "@/config/routes";
 import { authClient } from "@/lib/auth/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { getAuthErrorMessage } from "../utils/get-auth-error-message";
@@ -22,7 +22,10 @@ const inputClassName =
 const errorClassName = "text-xs font-medium text-destructive";
 
 export function RegisterForm() {
-  const router = useRouter();
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(
+    null,
+  );
+  const [isResending, setIsResending] = useState(false);
   const {
     register,
     handleSubmit,
@@ -39,6 +42,7 @@ export function RegisterForm() {
         name,
         email,
         password,
+        callbackURL: routes.meetings,
       });
       if (error) {
         toast.error(
@@ -49,8 +53,7 @@ export function RegisterForm() {
         );
         return;
       }
-      router.replace(routes.meetings);
-      router.refresh();
+      setVerificationEmail(email);
     } catch (error) {
       toast.error(
         getAuthErrorMessage(
@@ -60,6 +63,65 @@ export function RegisterForm() {
       );
     }
   };
+
+  const resendVerification = async () => {
+    if (!verificationEmail) return;
+    setIsResending(true);
+    try {
+      const { error } = await authClient.sendVerificationEmail({
+        email: verificationEmail,
+        callbackURL: routes.meetings,
+      });
+      if (error) {
+        toast.error(
+          "Unable to resend the verification email right now. Please try again later.",
+        );
+      } else {
+        toast.success(
+          "If this address needs verification, a new link is on its way.",
+        );
+      }
+    } catch {
+      toast.error(
+        "Unable to resend the verification email right now. Please try again later.",
+      );
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  if (verificationEmail) {
+    return (
+      <div className="w-full rounded-[28px] border border-border bg-surface p-5 text-center shadow-[0_20px_60px_rgba(29,33,28,0.08)] sm:p-7">
+        <h1 className="text-[27px] font-semibold tracking-[-0.035em] text-foreground sm:text-[30px]">
+          Check your email
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          We sent a verification link to{" "}
+          <strong className="text-foreground">{verificationEmail}</strong>. Open
+          it to activate your account and continue to Vey.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isResending}
+          onClick={() => void resendVerification()}
+          className="mt-6 h-12 w-full rounded-xl"
+        >
+          {isResending ? "Sending..." : "Resend verification email"}
+        </Button>
+        <p className="mt-5 text-sm text-muted-foreground">
+          Already verified?{" "}
+          <Link
+            href={routes.login}
+            className="font-semibold text-foreground underline underline-offset-4"
+          >
+            Sign in
+          </Link>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full rounded-[28px] border border-border bg-surface p-5 shadow-[0_20px_60px_rgba(29,33,28,0.08)] sm:p-7">
