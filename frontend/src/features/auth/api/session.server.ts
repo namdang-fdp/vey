@@ -1,28 +1,11 @@
 import "server-only";
 
 import { headers } from "next/headers";
-import { z } from "zod";
 import { getApiBaseUrl } from "@/lib/api/config";
-
-const contextSchema = z.object({
-  user: z.object({
-    id: z.uuid(),
-    email: z.email(),
-    displayName: z.string().nullable(),
-    avatarUrl: z.string().nullable(),
-  }),
-  activeWorkspace: z.object({
-    id: z.uuid(),
-    name: z.string(),
-    type: z.enum(["PERSONAL", "TEAM"]),
-  }),
-  membership: z.object({ role: z.enum(["OWNER", "ADMIN", "MEMBER", "GUEST"]) }),
-});
-const responseSchema = z.object({
-  code: z.literal(1000),
-  result: contextSchema,
-});
-export type VeySession = z.infer<typeof contextSchema>;
+import {
+  veySessionResponseSchema,
+  type VeySession,
+} from "../schemas/session-schema";
 
 export class WorkspaceAccessError extends Error {
   constructor() {
@@ -50,7 +33,7 @@ export async function getVeySession(): Promise<VeySession | null> {
   if (response.status === 401) return null;
   if (response.status === 403) throw new WorkspaceAccessError();
   if (!response.ok) throw new Error("Unable to check your Vey session");
-  const parsed = responseSchema.safeParse(await response.json());
+  const parsed = veySessionResponseSchema.safeParse(await response.json());
   if (!parsed.success) throw new Error("Invalid Vey session response");
   return parsed.data.result;
 }

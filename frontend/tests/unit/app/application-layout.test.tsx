@@ -10,9 +10,9 @@ const { getSession, getVeySession, doRedirect } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/server", () => ({ auth: { api: { getSession } } }));
-vi.mock("@/lib/auth/vey-session", () => ({ getVeySession }));
+vi.mock("@/features/auth/api/session.server", () => ({ getVeySession }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
-vi.mock("@/components/shell/application-navigation", () => ({
+vi.mock("@/components/layout/application-navigation", () => ({
   ApplicationNavigation: () => null,
 }));
 vi.mock("@/features/auth/components/sign-out-control", () => ({

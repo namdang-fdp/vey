@@ -2,8 +2,11 @@
 
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { useReducedMotion } from "motion/react";
-import { EyeIcon, type EyeIconHandle } from "./eye";
-import { EyeOffIcon, type EyeOffIconHandle } from "./eye-off";
+import { EyeIcon, type EyeIconHandle } from "@/components/icons/animated/eye";
+import {
+  EyeOffIcon,
+  type EyeOffIconHandle,
+} from "@/components/icons/animated/eye-off";
 import { Input } from "./input";
 import { Button } from "./button";
 import { cn } from "@/lib/utils";

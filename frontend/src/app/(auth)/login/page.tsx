@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { routes } from "@/config/routes";
-import { getVeySession } from "@/lib/auth/vey-session";
+import { getVeySession } from "@/features/auth/api/session.server";
 
 export const metadata: Metadata = {
   title: "Log in",

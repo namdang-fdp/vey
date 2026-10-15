@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
-import { FadeIn } from "@/components/amicro/fade-in";
+import { FadeIn } from "./fade-in";
 import { BrandLogo } from "@/components/brand/brand-logo";
 
 export interface LoginViewProps {

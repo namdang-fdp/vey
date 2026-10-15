@@ -10,7 +10,10 @@ vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({ headers: requestHeaders }));
 vi.mock("@/lib/api/config", () => ({ getApiBaseUrl }));
 
-import { getVeySession, WorkspaceAccessError } from "@/lib/auth/vey-session";
+import {
+  getVeySession,
+  WorkspaceAccessError,
+} from "@/features/auth/api/session.server";
 
 const context = {
   user: {

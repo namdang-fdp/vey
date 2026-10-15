@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import LoginPage from "@/app/(auth)/(fullscreen)/login/page";
-import RegisterPage from "@/app/(auth)/(fullscreen)/register/page";
-import AuthCompletePage from "@/app/auth/complete/page";
+import LoginPage from "@/app/(auth)/login/page";
+import RegisterPage from "@/app/(auth)/register/page";
+import AuthCompletePage from "@/app/(auth)/auth/complete/page";
 
 const { getSession, getVeySession, doRedirect } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -10,7 +10,7 @@ const { getSession, getVeySession, doRedirect } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/server", () => ({ auth: { api: { getSession } } }));
-vi.mock("@/lib/auth/vey-session", () => ({ getVeySession }));
+vi.mock("@/features/auth/api/session.server", () => ({ getVeySession }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("next/navigation", () => ({
   redirect: (path: string) => {

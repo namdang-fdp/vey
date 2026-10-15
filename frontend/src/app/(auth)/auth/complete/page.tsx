@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth/server";
 import { routes } from "@/config/routes";
 import { LoginView } from "@/features/auth/components/login-view";
 import { CompleteSignIn } from "@/features/auth/components/complete-sign-in";
-import { getVeySession } from "@/lib/auth/vey-session";
+import { getVeySession } from "@/features/auth/api/session.server";
 export default async function AuthCompletePage() {
   if (await getVeySession()) redirect(routes.meetings);
   const session = await auth.api.getSession({ headers: await headers() });

@@ -6,7 +6,7 @@ const { info, location } = vi.hoisted(() => ({
 }));
 vi.mock("next/navigation", () => ({ usePathname: () => location.pathname }));
 vi.mock("@/lib/notifications", () => ({ toast: { info } }));
-import { NavigationFeedback } from "@/components/shell/navigation-feedback";
+import { NavigationFeedback } from "@/components/feedback/navigation-feedback";
 
 describe("navigation feedback", () => {
   beforeEach(() => {
