@@ -11,6 +11,17 @@ concurrency:
   # Let publishing runs finish a matching backend/frontend pair.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  deployment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version and deploy regressions
+        run: python3 -m unittest discover -s deployment/tests
+      - name: Shell syntax and lint
+        run: |
+          bash -n deployment/cd.sh
+          docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:v0.10.0 deployment/cd.sh
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -52,9 +63,24 @@ jobs:
           BETTER_AUTH_DATABASE_URL: postgresql://localhost:5432/vey_ci
           BETTER_AUTH_URL: http://localhost:3000
         run: BETTER_AUTH_SECRET="$(openssl rand -hex 32)" bun run build
+  version:
+    needs: [backend, frontend, deployment]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reserve release version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 deployment/version.py
   images:
     name: Container (${{ matrix.image }})
-    needs: [backend, frontend]
+    needs: [backend, frontend, version]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -120,7 +146,7 @@ jobs:
         with:
           images: ${{ steps.registries.outputs.images }}
           tags: |
-            type=raw,value=${{ github.sha }}
+            type=raw,value=${{ needs.version.outputs.version }}
             type=ref,event=branch
             type=raw,value=latest,enable=${{ env.PUBLISH == 'true' && github.ref == 'refs/heads/main' }}
       - name: Build and publish
@@ -136,3 +162,15 @@ jobs:
             NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL || 'https://vey.dorriss.com' }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,scope=${{ matrix.image }},mode=max
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [images, version]
+    uses: ./.github/workflows/cd.yaml
+    with:
+      version: ${{ needs.version.outputs.version }}
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}

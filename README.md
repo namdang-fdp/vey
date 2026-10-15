@@ -61,12 +61,17 @@ GHCR and Docker Hub.
 | Backend  | `ghcr.io/namdang-fdp/vey-api`      | `<namespace>/vey-api`      |
 | Frontend | `ghcr.io/namdang-fdp/vey-frontend` | `<namespace>/vey-frontend` |
 
-Each registry receives the full commit SHA tag and a branch tag (`main` or
-`feature-deployment`). Only `main` updates `latest`. Deploy using the SHA tag (or
-digest); roll back by selecting the previous verified SHA for both apps.
+Production versions are `0.1`, `0.2`, `0.3`, etc., reserved as lightweight Git tags
+`v0.N` after quality gates pass. Rerunning the same commit reuses its version;
+a failed publication keeps its reserved version. Development builds use
+`dev-<CI run number>`. Each registry also receives a branch tag (`main` or
+`feature-deployment`); only `main` updates `latest`. Deploy using a numbered
+version, and roll back by selecting the previous verified version for both apps.
 Registry publishing is not atomic: if either upload fails, fix/re-run that job and
-verify both images before deploying. This workflow publishes images; it does not
-change the VPS or deploy an application.
+verify both images before deploying. After both images publish on `main`,
+`.github/workflows/cd.yaml` connects over SSH and runs the server's `cd.sh`.
+See [deployment/README.md](deployment/README.md) for server layout, SSH secrets,
+version tracking, bootstrap and rollback.
 
 Repository Actions secrets:
 
