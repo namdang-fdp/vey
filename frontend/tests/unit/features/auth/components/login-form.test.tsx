@@ -16,7 +16,9 @@ vi.mock("@/lib/auth/client", () => ({
   authClient: { signIn: { email: signInEmail, social: signInSocial } },
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh }) }));
-vi.mock("sonner", () => ({ toast: { error: toastError } }));
+vi.mock("@/lib/notifications", () => ({
+  toast: { error: toastError, info: vi.fn(), success: vi.fn() },
+}));
 
 describe("LoginForm", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -37,10 +39,10 @@ describe("LoginForm", () => {
       expect(signInEmail).toHaveBeenCalledWith({
         email: "Candidate@Example.com",
         password: "passphrase",
-        callbackURL: "/meetings",
+        callbackURL: "/auth/complete",
       }),
     );
-    expect(replace).toHaveBeenCalledWith("/meetings");
+    expect(replace).toHaveBeenCalledWith("/auth/complete");
     expect(refresh).toHaveBeenCalled();
   });
 
@@ -95,7 +97,7 @@ describe("LoginForm", () => {
       await waitFor(() =>
         expect(signInSocial).toHaveBeenCalledWith({
           provider,
-          callbackURL: "/meetings",
+          callbackURL: "/auth/complete",
           errorCallbackURL: "/login?oauth=failed",
         }),
       );

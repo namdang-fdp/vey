@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "@/app/(auth)/(fullscreen)/login/page";
 import RegisterPage from "@/app/(auth)/(fullscreen)/register/page";
+import AuthCompletePage from "@/app/auth/complete/page";
 
-const { getSession, doRedirect } = vi.hoisted(() => ({
+const { getSession, getVeySession, doRedirect } = vi.hoisted(() => ({
   getSession: vi.fn(),
+  getVeySession: vi.fn(),
   doRedirect: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/server", () => ({ auth: { api: { getSession } } }));
+vi.mock("@/lib/auth/vey-session", () => ({ getVeySession }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("next/navigation", () => ({
   redirect: (path: string) => {
@@ -16,24 +19,73 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
-describe("implemented auth page redirects", () => {
-  beforeEach(() => vi.clearAllMocks());
+const veySession = {
+  user: {
+    id: "vey-user-1",
+    email: "member@example.com",
+    displayName: "Vey Member",
+    avatarUrl: null,
+  },
+  activeWorkspace: { id: "workspace-1", name: "Personal", type: "PERSONAL" },
+  membership: { role: "OWNER" },
+};
 
-  it("sends an authenticated visitor from login to meetings", async () => {
-    getSession.mockResolvedValue({ user: { id: "user-1" } });
+const authPages = [
+  {
+    name: "login",
+    visit: () => LoginPage({ searchParams: Promise.resolve({}) }),
+  },
+  { name: "register", visit: () => RegisterPage() },
+];
 
-    await expect(
-      LoginPage({ searchParams: Promise.resolve({}) }),
-    ).rejects.toThrow("NEXT_REDIRECT");
+describe("auth page session redirects", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getVeySession.mockResolvedValue(null);
+    getSession.mockResolvedValue(null);
+  });
+
+  for (const page of authPages) {
+    it(`sends a visitor with a valid Vey session from ${page.name} to meetings`, async () => {
+      getVeySession.mockResolvedValue(veySession);
+
+      await expect(page.visit()).rejects.toThrow("NEXT_REDIRECT");
+
+      expect(doRedirect).toHaveBeenCalledWith("/meetings");
+    });
+
+    it(`restores a missing Vey session from ${page.name} when Better Auth is still valid`, async () => {
+      getSession.mockResolvedValue({ user: { id: "auth-user-1" } });
+
+      await expect(page.visit()).rejects.toThrow("NEXT_REDIRECT");
+
+      expect(doRedirect).toHaveBeenCalledWith("/auth/complete");
+    });
+
+    it(`renders ${page.name} when both sessions are absent`, async () => {
+      expect(await page.visit()).toBeTruthy();
+      expect(doRedirect).not.toHaveBeenCalled();
+    });
+  }
+
+  it("skips auth completion when the Vey session is already valid", async () => {
+    getVeySession.mockResolvedValue(veySession);
+
+    await expect(AuthCompletePage()).rejects.toThrow("NEXT_REDIRECT");
 
     expect(doRedirect).toHaveBeenCalledWith("/meetings");
   });
 
-  it("sends an authenticated visitor from register to meetings", async () => {
-    getSession.mockResolvedValue({ user: { id: "user-1" } });
+  it("requires a Better Auth session to exchange when Vey session is missing", async () => {
+    await expect(AuthCompletePage()).rejects.toThrow("NEXT_REDIRECT");
 
-    await expect(RegisterPage()).rejects.toThrow("NEXT_REDIRECT");
+    expect(doRedirect).toHaveBeenCalledWith("/login");
+  });
 
-    expect(doRedirect).toHaveBeenCalledWith("/meetings");
+  it("renders auth completion to exchange a valid Better Auth session", async () => {
+    getSession.mockResolvedValue({ user: { id: "auth-user-1" } });
+
+    expect(await AuthCompletePage()).toBeTruthy();
+    expect(doRedirect).not.toHaveBeenCalled();
   });
 });

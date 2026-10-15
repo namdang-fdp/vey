@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
+import { FadeIn } from "@/components/amicro/fade-in";
 import { BrandLogo } from "@/components/brand/brand-logo";
 
 export interface LoginViewProps {
@@ -10,7 +11,7 @@ export interface LoginViewProps {
 
 export function LoginView({ children, label = "Sign in" }: LoginViewProps) {
   return (
-    <main className="min-h-screen bg-[#fafafa] text-[#262626] antialiased">
+    <main className="min-h-dvh bg-auth-background text-foreground antialiased">
       <div className="flex min-h-screen">
         {/* Left column: Authentication surface */}
         <div className="relative flex min-h-screen w-full flex-col lg:w-1/2">
@@ -19,12 +20,12 @@ export function LoginView({ children, label = "Sign in" }: LoginViewProps) {
               <BrandLogo />
             </Link>
           </header>
-          <div className="mx-auto flex min-h-screen w-full max-w-140 flex-col justify-center px-6 py-10 sm:px-12 lg:px-16">
+          <div className="mx-auto flex min-h-screen w-full max-w-140 flex-col justify-center px-6 pt-28 pb-12 sm:px-12 sm:pb-16 lg:px-16">
             <section
               aria-label={label}
-              className="relative mx-auto w-full max-w-100 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500"
+              className="relative mx-auto w-full max-w-100"
             >
-              {children}
+              <FadeIn duration={0.25}>{children}</FadeIn>
             </section>
           </div>
         </div>
@@ -33,14 +34,14 @@ export function LoginView({ children, label = "Sign in" }: LoginViewProps) {
           aria-hidden="true"
           className="relative hidden min-h-screen lg:block lg:w-1/2 p-3"
         >
-          <div className="relative h-full w-full overflow-hidden rounded-3xl border border-black/5 shadow-[0_4px_32px_rgba(0,0,0,0.04)] bg-[#f0f0f0]">
+          <div className="relative h-full w-full overflow-hidden rounded-2xl bg-auth-visual">
             <Image
               src="/images/auth-artwork.webp"
               alt=""
               fill
               loading="eager"
               sizes="50vw"
-              className="object-cover transition-transform duration-700 hover:scale-[1.01]"
+              className="object-cover"
             />
           </div>
         </aside>

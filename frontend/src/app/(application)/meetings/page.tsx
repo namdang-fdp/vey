@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { CalendarDays } from "lucide-react";
 
 export const metadata: Metadata = { title: "Meetings" };
 
@@ -17,14 +16,7 @@ export default function MeetingsPage() {
           A place for your meetings and the decisions that follow.
         </p>
       </header>
-      <div className="flex min-h-80 flex-col items-center justify-center rounded-3xl border border-dashed border-border-strong bg-surface px-6 py-14 text-center sm:min-h-96">
-        <div className="mb-6 flex size-16 items-center justify-center rounded-2xl border border-border bg-primary-subtle text-primary">
-          <CalendarDays
-            aria-hidden="true"
-            className="size-7"
-            strokeWidth={1.5}
-          />
-        </div>
+      <div className="flex min-h-72 flex-col justify-center border-t border-border py-12 sm:min-h-80">
         <h2 className="text-xl font-semibold tracking-tight">
           No meetings yet.
         </h2>

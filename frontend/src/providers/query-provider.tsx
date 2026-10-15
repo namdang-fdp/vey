@@ -32,7 +32,9 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       {children}
       {Devtools && (
         <Suspense fallback={null}>
-          <Devtools initialIsOpen={false} />
+          <div className="fixed top-3 right-16 z-50">
+            <Devtools initialIsOpen={false} buttonPosition="relative" />
+          </div>
         </Suspense>
       )}
     </QueryClientProvider>

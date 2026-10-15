@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { routes } from "@/config/routes";
 import { authClient } from "@/lib/auth/client";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,9 +9,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { Eye, EyeOff, KeyRound, ShieldAlert } from "lucide-react";
-import { RecoveryPanel, RecoveryArrow } from "./recovery-panel";
+import { toast } from "@/lib/notifications";
+import { RecoveryPanel } from "./recovery-panel";
 import {
   resetPasswordSchema,
   type ResetPasswordValues,
@@ -26,7 +25,6 @@ export function ResetPasswordForm({
 }) {
   const router = useRouter();
   const [linkInvalid, setLinkInvalid] = useState(!token || invalidLink);
-  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -45,9 +43,12 @@ export function ResetPasswordForm({
         token,
       });
       if (error) {
-        if (error.code === "INVALID_TOKEN" || error.code === "TOKEN_EXPIRED")
+        if (error.code === "INVALID_TOKEN" || error.code === "TOKEN_EXPIRED") {
           setLinkInvalid(true);
-        else toast.error("Unable to update your password. Please try again.");
+          toast.error("Request a new password reset link to continue.", {
+            title: "Reset link unavailable",
+          });
+        } else toast.error("Unable to update your password. Please try again.");
         return;
       }
       toast.success(
@@ -63,13 +64,6 @@ export function ResetPasswordForm({
   return (
     <RecoveryPanel
       title={linkInvalid ? "Reset link unavailable" : "Set a new password"}
-      icon={
-        linkInvalid ? (
-          <ShieldAlert className="size-5" />
-        ) : (
-          <KeyRound className="size-5" />
-        )
-      }
       description={
         linkInvalid
           ? "This reset link is missing, invalid, or expired. Request a new one to continue."
@@ -77,18 +71,16 @@ export function ResetPasswordForm({
       }
     >
       {linkInvalid ? (
-        <Button
-          asChild
-          className="t-learn mt-7 h-12 w-full justify-between rounded-xl px-5"
-        >
-          <Link href={routes.forgotPassword}>
-            Request a new link
-            <RecoveryArrow />
-          </Link>
+        <Button asChild className="mt-7 h-12 w-full rounded-xl px-5">
+          <Link href={routes.forgotPassword}>Request a new link</Link>
         </Button>
       ) : (
         <form
-          onSubmit={handleSubmit(submit)}
+          onSubmit={handleSubmit(submit, () =>
+            toast.error("Review the highlighted fields and try again.", {
+              title: "Check your password",
+            }),
+          )}
           noValidate
           className="mt-7 space-y-5"
           aria-label="Reset password form"
@@ -96,41 +88,23 @@ export function ResetPasswordForm({
           <div className="space-y-1.5">
             <label
               htmlFor="reset-password"
-              className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              className="block text-sm font-medium text-foreground"
             >
               New password
             </label>
-            <div className="relative">
-              <Input
-                id="reset-password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
-                disabled={isSubmitting}
-                aria-invalid={!!errors.password}
-                aria-describedby={
-                  errors.password
-                    ? "reset-password-hint reset-password-error"
-                    : "reset-password-hint"
-                }
-                className="h-12 rounded-xl bg-background px-4 pr-12 shadow-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
-                {...register("password")}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                disabled={isSubmitting}
-                onClick={() => setShowPassword((value) => !value)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute top-1/2 right-1 -translate-y-1/2 text-muted-foreground"
-              >
-                {showPassword ? (
-                  <EyeOff aria-hidden="true" />
-                ) : (
-                  <Eye aria-hidden="true" />
-                )}
-              </Button>
-            </div>
+            <PasswordInput
+              id="reset-password"
+              autoComplete="new-password"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.password}
+              aria-describedby={
+                errors.password
+                  ? "reset-password-hint reset-password-error"
+                  : "reset-password-hint"
+              }
+              className="h-12 rounded-xl border-border bg-surface px-4 text-sm text-foreground shadow-none transition-colors duration-[var(--duration-quick)] placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/15 disabled:bg-muted/60"
+              {...register("password")}
+            />
             <p
               id="reset-password-hint"
               className="text-xs text-muted-foreground"
@@ -150,13 +124,13 @@ export function ResetPasswordForm({
           <div className="space-y-1.5">
             <label
               htmlFor="reset-confirm-password"
-              className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              className="block text-sm font-medium text-foreground"
             >
               Confirm new password
             </label>
-            <Input
+            <PasswordInput
+              visibilityLabel="confirmation password"
               id="reset-confirm-password"
-              type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               disabled={isSubmitting}
               aria-invalid={!!errors.confirmPassword}
@@ -165,7 +139,7 @@ export function ResetPasswordForm({
                   ? "reset-confirm-password-error"
                   : undefined
               }
-              className="h-12 rounded-xl bg-background px-4 shadow-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
+              className="h-12 rounded-xl border-border bg-surface px-4 text-sm text-foreground shadow-none transition-colors duration-[var(--duration-quick)] placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/15 disabled:bg-muted/60"
               {...register("confirmPassword")}
             />
             {errors.confirmPassword && (
@@ -181,10 +155,9 @@ export function ResetPasswordForm({
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="t-learn h-12 w-full justify-between rounded-xl bg-primary px-5 text-primary-foreground transition-colors duration-[var(--duration-quick)] hover:bg-primary-hover"
+            className="h-12 w-full rounded-xl bg-primary px-5 text-primary-foreground transition-colors duration-[var(--duration-quick)] hover:bg-primary-hover"
           >
             {isSubmitting ? "Updating..." : "Update password"}
-            <RecoveryArrow />
           </Button>
         </form>
       )}

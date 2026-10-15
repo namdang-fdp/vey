@@ -23,8 +23,8 @@ vi.mock("@/lib/auth/client", () => ({
   authClient: { requestPasswordReset, resetPassword },
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh }) }));
-vi.mock("sonner", () => ({
-  toast: { error: toastError, success: toastSuccess },
+vi.mock("@/lib/notifications", () => ({
+  toast: { error: toastError, success: toastSuccess, info: vi.fn() },
 }));
 
 describe("password recovery forms", () => {

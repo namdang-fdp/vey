@@ -2,19 +2,19 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RegisterForm } from "@/features/auth/components/register-form";
 
-const { signUpEmail, sendVerificationEmail, toastError, toastSuccess } =
+const { signUpEmail, sendVerificationEmail, toastError, toastInfo } =
   vi.hoisted(() => ({
     signUpEmail: vi.fn(),
     sendVerificationEmail: vi.fn(),
     toastError: vi.fn(),
-    toastSuccess: vi.fn(),
+    toastInfo: vi.fn(),
   }));
 
 vi.mock("@/lib/auth/client", () => ({
   authClient: { signUp: { email: signUpEmail }, sendVerificationEmail },
 }));
-vi.mock("sonner", () => ({
-  toast: { error: toastError, success: toastSuccess },
+vi.mock("@/lib/notifications", () => ({
+  toast: { error: toastError, info: toastInfo, success: vi.fn() },
 }));
 
 function fillRegistration(
@@ -86,7 +86,7 @@ describe("RegisterForm", () => {
         name: "Vey User",
         email: "user@example.com",
         password: "password123",
-        callbackURL: "/meetings",
+        callbackURL: "/auth/complete",
       }),
     );
     expect(screen.getByText("Check your email")).toBeVisible();
@@ -98,10 +98,10 @@ describe("RegisterForm", () => {
     await waitFor(() =>
       expect(sendVerificationEmail).toHaveBeenCalledWith({
         email: "user@example.com",
-        callbackURL: "/meetings",
+        callbackURL: "/auth/complete",
       }),
     );
-    expect(toastSuccess).toHaveBeenCalled();
+    expect(toastInfo).toHaveBeenCalled();
   });
 
   it("maps duplicate email errors to friendly copy", async () => {

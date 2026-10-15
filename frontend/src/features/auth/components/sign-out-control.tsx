@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
+import { apiClient } from "@/lib/api/client";
 import { authClient } from "@/lib/auth/client";
 import { getAuthErrorMessage } from "../utils/get-auth-error-message";
-import { toast } from "sonner";
-import { LogOut } from "lucide-react";
+import { toast } from "@/lib/notifications";
 
 export function SignOutControl({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
@@ -16,13 +16,22 @@ export function SignOutControl({ compact = false }: { compact?: boolean }) {
   const signOut = async () => {
     setIsPending(true);
     try {
-      const { error } = await authClient.signOut();
+      // Do not report a completed logout while an application session remains active.
+      await apiClient.post("/api/v1/auth/session/logout", undefined, {
+        timeout: 5000,
+      });
+      const { error } = await authClient.signOut({
+        fetchOptions: { signal: AbortSignal.timeout(10000) },
+      });
       if (error) {
         toast.error(
           getAuthErrorMessage(error, "Unable to sign out. Please try again."),
         );
         return;
       }
+      toast.success("You have been signed out of this device.", {
+        title: "Signed out",
+      });
       router.replace(routes.login);
       router.refresh();
     } catch (error) {
@@ -38,18 +47,16 @@ export function SignOutControl({ compact = false }: { compact?: boolean }) {
     <Button
       type="button"
       variant="ghost"
-      size={compact ? "icon" : "sm"}
-      aria-label={compact ? "Sign out" : undefined}
+      size="sm"
       disabled={isPending}
       onClick={signOut}
       className={
         compact
-          ? "size-11"
+          ? "h-11 px-3"
           : "h-11 w-full justify-start gap-3 rounded-xl px-3 text-muted-foreground hover:text-foreground"
       }
     >
-      <LogOut aria-hidden="true" className="size-4" />
-      {!compact && (isPending ? "Signing out..." : "Sign out")}
+      {isPending ? "Signing out..." : "Sign out"}
     </Button>
   );
 }

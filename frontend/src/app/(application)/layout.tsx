@@ -6,12 +6,16 @@ import { auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { routes } from "@/config/routes";
+import { getVeySession } from "@/lib/auth/vey-session";
 
 export default async function ApplicationLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect(routes.login);
+  const session = await getVeySession();
+  if (!session) {
+    const identity = await auth.api.getSession({ headers: await headers() });
+    redirect(identity ? routes.authComplete : routes.login);
+  }
 
   return (
     <div className="min-h-dvh bg-background md:grid md:grid-cols-[15.5rem_minmax(0,1fr)]">
@@ -38,11 +42,11 @@ export default async function ApplicationLayout({
               aria-hidden="true"
               className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-subtle text-sm font-semibold text-on-primary-subtle"
             >
-              {session.user.name?.trim().charAt(0).toUpperCase() || "V"}
+              {session.user.displayName?.trim().charAt(0).toUpperCase() || "V"}
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">
-                {session.user.name?.trim() || session.user.email}
+                {session.user.displayName?.trim() || session.user.email}
               </p>
               <p
                 className="truncate text-xs text-muted-foreground"

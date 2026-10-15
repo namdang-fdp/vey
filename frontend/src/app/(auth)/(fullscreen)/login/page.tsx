@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { routes } from "@/config/routes";
+import { getVeySession } from "@/lib/auth/vey-session";
 
 export const metadata: Metadata = {
   title: "Log in",
@@ -16,8 +17,9 @@ export default async function LoginPage({
 }: {
   searchParams?: Promise<{ oauth?: string }>;
 }) {
+  if (await getVeySession()) redirect(routes.meetings);
   const session = await auth.api.getSession({ headers: await headers() });
-  if (session) redirect(routes.meetings);
+  if (session) redirect(routes.authComplete);
   const oauthFailed = (await searchParams)?.oauth === "failed";
 
   return (

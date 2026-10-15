@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "goey-toast/styles.css";
 
 @theme inline {
   --font-sans: var(--font-albert-sans), Arial, sans-serif;
@@ -76,7 +77,7 @@
   --duration-stagger: 40ms;
   --duration-micro: 80ms;
   --duration-quick: 150ms;
-  --duration-fast: 220ms;
+  --duration-fast: 250ms;
   --duration-medium: 350ms;
   --duration-slow: 400ms;
   --duration-very-slow: 500ms;
@@ -92,12 +93,62 @@
 
   --scale-tiny: 0.99;
   --scale-small: 0.98;
+}
 
-  --learn-shift: 2px;
-  --learn-spread: 8deg;
-  --learn-in: 350ms;
-  --learn-out: 350ms;
-  --learn-ease: cubic-bezier(0.22, 1, 0.36, 1);
+.vey-toast {
+  font-family: var(--font-albert-sans), Arial, sans-serif;
+  pointer-events: none;
+}
+
+.vey-toast .gooey-content {
+  padding-right: 44px;
+}
+
+.vey-toast .gooey-description {
+  text-align: left;
+}
+
+.vey-toast .gooey-contentExpanded {
+  min-width: min(340px, calc(100vw - 32px));
+  max-width: min(380px, calc(100vw - 32px));
+}
+
+.vey-toast .vey-toast-title {
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: nowrap;
+  max-width: min(16rem, calc(100vw - 112px));
+}
+
+.vey-toast .gooey-closeButton {
+  top: 3px;
+  right: auto;
+  left: 6px;
+  width: 28px;
+  height: 28px;
+  opacity: 1;
+  pointer-events: auto;
+  border-radius: 6px;
+  border-width: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.vey-toast .gooey-closeButton::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+
+.vey-toast .gooey-closeButton:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .amicro-fade-in {
+    opacity: 1 !important;
+  }
 }
 
 @layer base {
@@ -172,36 +223,6 @@
   animation: t-alert-enter var(--duration-quick) var(--ease-smooth-out) both;
 }
 
-.t-learn-chevron {
-  display: inline-flex;
-  transform: translateX(0);
-  transition: transform var(--learn-out) var(--learn-ease);
-}
-
-.t-learn-arm {
-  transform-box: view-box;
-  transform-origin: 10px 8px;
-  vector-effect: non-scaling-stroke;
-  transition: transform var(--learn-out) var(--learn-ease);
-}
-
-.t-learn:hover .t-learn-chevron {
-  transform: translateX(var(--learn-shift));
-  transition-duration: var(--learn-in);
-}
-
-.t-learn:hover .t-learn-arm {
-  transition-duration: var(--learn-in);
-}
-
-.t-learn:hover .t-learn-arm-top {
-  transform: rotate(var(--learn-spread));
-}
-
-.t-learn:hover .t-learn-arm-bot {
-  transform: rotate(calc(var(--learn-spread) * -1));
-}
-
 @media (prefers-reduced-motion: reduce) {
   .t-auth-form-enter,
   .t-auth-art-enter,
@@ -210,9 +231,5 @@
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
-  }
-  .t-learn-chevron,
-  .t-learn-arm {
-    transition: none !important;
   }
 }

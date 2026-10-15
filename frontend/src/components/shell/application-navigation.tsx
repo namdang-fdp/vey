@@ -1,6 +1,5 @@
 "use client";
 
-import { CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -34,7 +33,6 @@ export function ApplicationNavigation({
                 : "text-muted-foreground hover:bg-background hover:text-foreground",
             )}
           >
-            <CalendarDays aria-hidden="true" className="size-4 shrink-0" />
             <span>{label}</span>
           </Link>
         );
