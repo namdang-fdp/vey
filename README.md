@@ -102,6 +102,12 @@ Unknown/revoked cookies can log out.
 A missing/invalid session returns 401; a valid session without active membership
 returns 403. Redis caching and full RBAC are not implemented.
 
+Method security is enabled. Each authenticated Vey request receives exactly one
+authority, `ROLE_<membershipRole>`, from its active workspace membership, reloaded
+from PostgreSQL on each request. Spring-managed methods can use
+`@PreAuthorize("hasRole('OWNER')")` or `hasAnyRole(...)`; roles have no implicit
+hierarchy. Resource access must also enforce the active workspace boundary.
+
 The shell checks Vey session validity first. A valid Vey session remains usable
 when the identity session naturally expires. A missing/expired Vey session with
 a valid identity goes through `/auth/complete`; without either session it goes to
