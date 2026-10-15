@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:auth": "bun scripts/test-auth.ts"
   },
   "dependencies": {
     "@better-auth/core": "1.7.6",
