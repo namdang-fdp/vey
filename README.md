@@ -47,6 +47,63 @@ Backend integration tests use Testcontainers and need Docker. `make setup` insta
 
 For the local browser smoke test, start the API and run `bunx playwright install chromium` followed by `bun run test:e2e` in `frontend/`.
 
+## CI and container publishing
+
+`.github/workflows/ci.yml` runs backend formatting, Checkstyle, tests and packaging,
+plus frontend formatting, lint, typecheck, unit tests and production build on PRs,
+pushes to `main` and `feature/deployment`, and manual runs. After both apps pass,
+a matrix builds both Dockerfiles. PRs and manual runs on other branches only build;
+pushes/manual runs on `main` or `feature/deployment` publish each image to both
+GHCR and Docker Hub.
+
+| App      | GHCR                               | Docker Hub                 |
+| -------- | ---------------------------------- | -------------------------- |
+| Backend  | `ghcr.io/namdang-fdp/vey-api`      | `<namespace>/vey-api`      |
+| Frontend | `ghcr.io/namdang-fdp/vey-frontend` | `<namespace>/vey-frontend` |
+
+Each registry receives the full commit SHA tag and a branch tag (`main` or
+`feature-deployment`). Only `main` updates `latest`. Deploy using the SHA tag (or
+digest); roll back by selecting the previous verified SHA for both apps.
+Registry publishing is not atomic: if either upload fails, fix/re-run that job and
+verify both images before deploying. This workflow publishes images; it does not
+change the VPS or deploy an application.
+
+Repository Actions secrets:
+
+- `DOCKERHUB_USERNAME`: Docker Hub login username.
+- `DOCKERHUB_TOKEN`: access token with push permission for both repositories.
+- GHCR uses the automatically provided `GITHUB_TOKEN` with job-level
+  `packages: write`; no separate GHCR secret is needed.
+
+The Docker Hub namespace defaults to the login username. Set repository variable
+`DOCKERHUB_NAMESPACE` for an organization namespace with appropriate token access.
+Publishing fails if either Docker Hub secret is missing or registry login fails.
+
+Set repository variable `NEXT_PUBLIC_API_BASE_URL` to the public API origin;
+the image build defaults to `https://vey.dorriss.com`. This value is compiled into
+the frontend and changing it requires rebuilding. Keep the public API and frontend
+on the same hostname, routing `/api/v1` to Spring and `/api/auth` to Next.js.
+
+The frontend uses Next.js standalone output, installs dependencies with Bun 1.4.0
+and runs as the unprivileged `node` user on Node.js 24. Both images target
+`linux/amd64`, matching the current VPS. Build locally:
+
+```sh
+docker build -t vey-api:local api
+docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://vey.dorriss.com -t vey-frontend:local frontend
+```
+
+Provide `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `BETTER_AUTH_DATABASE_URL`,
+`VEY_API_INTERNAL_URL`, and email/OAuth settings from `frontend/.env.example` at
+container runtime. Production auth credentials are never needed for image builds;
+the build uses an ephemeral secret and an unused database URL. Bootstrap the auth
+database using the identity instructions below before using auth endpoints. Supply
+Spring runtime settings from `.env.example`, with container-reachable infrastructure
+and JWKS addresses, HTTPS issuer/audience, and secure cookies enabled.
+
+References: [Next.js standalone output](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)
+and [Docker multi-registry publishing](https://docs.docker.com/build/ci/github-actions/push-multi-registries/).
+
 ## URLs
 
 - Frontend: http://localhost:3000
