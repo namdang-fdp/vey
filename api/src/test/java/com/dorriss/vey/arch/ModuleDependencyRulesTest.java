@@ -18,7 +18,7 @@ class ModuleDependencyRulesTest {
   void importsProductionClassesIncludingIam() {
     assertThat(CLASSES.contain("com.dorriss.vey.infrastructure.persistence.BaseEntity")).isTrue();
     assertThat(CLASSES.contain("com.dorriss.vey.common.health.HealthController")).isTrue();
-    assertThat(CLASSES.contain("com.dorriss.vey.modules.iam.domain.User")).isTrue();
+    assertThat(CLASSES.contain("com.dorriss.vey.modules.iam.domain.entity.User")).isTrue();
     assertThat(CLASSES.contain("com.dorriss.vey.modules.iam.persistence.UserRepository")).isTrue();
   }
 
