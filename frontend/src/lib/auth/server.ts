@@ -5,6 +5,8 @@ import { jwt } from "better-auth/plugins";
 import { PostgresDialect } from "kysely";
 import { Pool } from "pg";
 import { after } from "next/server";
+import { randomUUID } from "node:crypto";
+import { createIdentityRevoker, createRevocationHooks } from "./revocation";
 import {
   assertAuthEmailConfigured,
   sendPasswordResetEmail,
@@ -13,6 +15,7 @@ import {
 
 const databaseUrl = process.env.BETTER_AUTH_DATABASE_URL;
 const secret = process.env.BETTER_AUTH_SECRET;
+const baseURL = process.env.BETTER_AUTH_URL;
 
 if (!databaseUrl) {
   throw new Error("BETTER_AUTH_DATABASE_URL is required");
@@ -21,6 +24,12 @@ if (!databaseUrl) {
 if (!secret) {
   throw new Error("BETTER_AUTH_SECRET is required");
 }
+if (!baseURL) throw new Error("BETTER_AUTH_URL is required");
+
+const revokeIdentity = createIdentityRevoker(
+  async (payload): Promise<{ token: string }> =>
+    auth.api.signJWT({ body: { payload } }),
+);
 
 // Reuse connections across development HMR; production keeps one pool per process.
 const authGlobal = globalThis as typeof globalThis & { veyAuthPool?: Pool };
@@ -30,8 +39,9 @@ if (process.env.NODE_ENV !== "production") authGlobal.veyAuthPool = pool;
 
 export const auth = betterAuth({
   appName: "Vey",
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL,
   secret,
+  databaseHooks: createRevocationHooks(revokeIdentity),
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -95,6 +105,24 @@ export const auth = betterAuth({
     dialect: new PostgresDialect({ pool }),
     type: "postgres",
     schemaName: "auth",
+    transaction: true,
   },
-  plugins: [jwt()],
+  plugins: [
+    jwt({
+      jwks: { keyPairConfig: { alg: "ES256" } },
+      jwt: {
+        expirationTime: "15m",
+        definePayload: ({ user, session }) => ({
+          token_use: "identity",
+          jti: randomUUID(),
+          sid: session.id,
+          auth_session_created_at: session.createdAt.getTime(),
+          email: user.email,
+          name: user.name,
+          emailVerified: user.emailVerified,
+          image: user.image ?? null,
+        }),
+      },
+    }),
+  ],
 });
