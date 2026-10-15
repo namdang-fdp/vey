@@ -1,0 +1,85 @@
+name: CD
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+    secrets:
+      SSH_HOST:
+        required: true
+      SSH_PORT:
+        required: true
+      SSH_USER:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      SSH_KEY_PASSPHRASE:
+        required: false
+      SSH_KNOWN_HOSTS:
+        required: true
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Published version to deploy or roll back to, e.g. 0.1"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: vey-production-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERSION: ${{ inputs.version }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Deploy published version over SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" != "workflow_dispatch" ]]; then
+            current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+            if [[ "$current" != "$GITHUB_SHA" ]]; then
+              echo "A newer main commit exists; skipping this superseded automatic deployment."
+              exit 0
+            fi
+          fi
+          [[ "$VERSION" =~ ^0\.[1-9][0-9]*$ ]] || { echo "Invalid version" >&2; exit 1; }
+          [[ "$SSH_HOST" =~ ^[a-zA-Z0-9.-]+$ ]] || { echo "Invalid SSH host" >&2; exit 1; }
+          [[ "$SSH_USER" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]] || { echo "Invalid SSH user" >&2; exit 1; }
+          [[ "$SSH_PORT" =~ ^[0-9]+$ ]] && (( SSH_PORT >= 1 && SSH_PORT <= 65535 )) || { echo "Invalid SSH port" >&2; exit 1; }
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]] || { echo "Missing SSH credentials" >&2; exit 1; }
+          umask 077
+          key="$RUNNER_TEMP/vey-deploy-key"
+          hosts="$RUNNER_TEMP/vey-known-hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$hosts"
+          askpass="$RUNNER_TEMP/vey-deploy-askpass"
+          trap 'rm -f -- "$key" "$hosts" "$askpass"' EXIT
+          if ! ssh-keygen -y -P '' -f "$key" >/dev/null 2>&1; then
+            [[ -n "$SSH_KEY_PASSPHRASE" ]] || { echo "Encrypted or invalid key: SSH_KEY_PASSPHRASE is required" >&2; exit 1; }
+            cat > "$askpass" <<'ASKPASS'
+          #!/usr/bin/env bash
+          printf '%s\n' "$SSH_KEY_PASSPHRASE"
+          ASKPASS
+            chmod 700 "$askpass"
+            export SSH_ASKPASS="$askpass" SSH_ASKPASS_REQUIRE=force DISPLAY=none
+            # Remove encryption only from the ephemeral runner copy; never pass the secret in argv.
+            ssh-keygen -p -N '' -f "$key" </dev/null >/dev/null
+          fi
+          ssh-keygen -y -P '' -f "$key" >/dev/null
+          ssh -i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$hosts" \
+            "$SSH_USER@$SSH_HOST" "bash /root/selfhost/vey/cd.sh $VERSION"

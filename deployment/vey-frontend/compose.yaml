@@ -1,0 +1,26 @@
+name: vey-frontend
+services:
+  frontend:
+    image: ghcr.io/namdang-fdp/vey-frontend:${VERSION:?required}
+    container_name: vey-frontend
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - selfhost_net
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:3000/api/auth/ok',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+networks:
+  selfhost_net:
+    external: true

@@ -11,6 +11,88 @@ concurrency:
   # Let publishing runs finish a matching backend/frontend pair.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  ssh-preflight:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/deployment'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+    steps:
+      - name: Validate SSH secrets and server readiness without deploying
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SSH_HOST" =~ ^[a-zA-Z0-9.-]+$ ]] || { echo "Invalid SSH_HOST" >&2; exit 1; }
+          [[ "$SSH_USER" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]] || { echo "Invalid SSH_USER" >&2; exit 1; }
+          [[ "$SSH_PORT" =~ ^[0-9]+$ ]] && (( SSH_PORT >= 1 && SSH_PORT <= 65535 )) || { echo "Invalid SSH_PORT" >&2; exit 1; }
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]] || { echo "Missing SSH secrets" >&2; exit 1; }
+          umask 077
+          key="$RUNNER_TEMP/vey-preflight-key"
+          hosts="$RUNNER_TEMP/vey-preflight-hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$hosts"
+          askpass="$RUNNER_TEMP/vey-preflight-askpass"
+          trap 'rm -f -- "$key" "$hosts" "$askpass"' EXIT
+          if ! ssh-keygen -y -P '' -f "$key" >/dev/null 2>&1; then
+            [[ -n "$SSH_KEY_PASSPHRASE" ]] || { echo "Encrypted or invalid key: SSH_KEY_PASSPHRASE is required" >&2; exit 1; }
+            cat > "$askpass" <<'ASKPASS'
+          #!/usr/bin/env bash
+          printf '%s\n' "$SSH_KEY_PASSPHRASE"
+          ASKPASS
+            chmod 700 "$askpass"
+            export SSH_ASKPASS="$askpass" SSH_ASKPASS_REQUIRE=force DISPLAY=none
+            # Remove encryption only from the ephemeral runner copy; never pass the secret in argv.
+            ssh-keygen -p -N '' -f "$key" </dev/null >/dev/null
+          fi
+          ssh-keygen -y -P '' -f "$key" >/dev/null
+          lookup="$SSH_HOST"
+          if [[ "$SSH_PORT" != 22 ]]; then lookup="[$SSH_HOST]:$SSH_PORT"; fi
+          ssh-keygen -F "$lookup" -f "$hosts" >/dev/null || { echo "Known-hosts entry does not match SSH_HOST/SSH_PORT" >&2; exit 1; }
+          ssh-keygen -l -f "$hosts" >/dev/null
+          ssh -i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o ConnectTimeout=15 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$hosts" \
+            "$SSH_USER@$SSH_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          for command in docker python3 flock; do command -v "$command" >/dev/null; done
+          test -x /root/selfhost/vey/cd.sh
+          previous=""
+          for app in vey-backend vey-frontend; do
+            directory="/root/selfhost/vey/$app"
+            test -r "$directory/.env"
+            docker compose --project-directory "$directory" -f "$directory/compose.yaml" config --quiet
+            version=$(sed -n 's/^VERSION=//p' "$directory/.env")
+            [[ "$version" =~ ^0\.[0-9]+$ ]]
+            if [[ -n "$previous" && "$previous" != "$version" ]]; then
+              echo "Backend/frontend versions differ" >&2; exit 1
+            fi
+            previous="$version"
+          done
+          for container in core_postgres18 core_kafka; do
+            [[ "$(docker inspect --format '{{.State.Health.Status}}' "$container")" == healthy ]]
+          done
+          docker exec core_nginx nginx -t
+          for image in vey-api vey-frontend; do
+            docker manifest inspect "ghcr.io/namdang-fdp/$image:feature-deployment" >/dev/null
+          done
+          echo "SSH authentication, host verification, compose files, infrastructure and registry access: OK"
+          echo "Current application VERSION=$previous; no deployment performed"
+          REMOTE
+  deployment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version and deploy regressions
+        run: python3 -m unittest discover -s deployment/tests
+      - name: Shell syntax and lint
+        run: |
+          bash -n deployment/cd.sh
+          docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:v0.10.0 deployment/cd.sh
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -52,9 +134,24 @@ jobs:
           BETTER_AUTH_DATABASE_URL: postgresql://localhost:5432/vey_ci
           BETTER_AUTH_URL: http://localhost:3000
         run: BETTER_AUTH_SECRET="$(openssl rand -hex 32)" bun run build
+  version:
+    needs: [backend, frontend, deployment]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reserve release version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 deployment/version.py
   images:
     name: Container (${{ matrix.image }})
-    needs: [backend, frontend]
+    needs: [backend, frontend, version]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -120,7 +217,7 @@ jobs:
         with:
           images: ${{ steps.registries.outputs.images }}
           tags: |
-            type=raw,value=${{ github.sha }}
+            type=raw,value=${{ needs.version.outputs.version }}
             type=ref,event=branch
             type=raw,value=latest,enable=${{ env.PUBLISH == 'true' && github.ref == 'refs/heads/main' }}
       - name: Build and publish
@@ -136,3 +233,16 @@ jobs:
             NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL || 'https://vey.dorriss.com' }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,scope=${{ matrix.image }},mode=max
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [images, version]
+    uses: ./.github/workflows/cd.yaml
+    with:
+      version: ${{ needs.version.outputs.version }}
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
