@@ -37,7 +37,11 @@ jobs:
         run: bun run test
       - name: Build
         working-directory: frontend
-        run: bun run build
+        env:
+          # Next.js imports auth configuration during build; no live database is required.
+          BETTER_AUTH_DATABASE_URL: postgresql://localhost:5432/vey_ci
+          BETTER_AUTH_URL: http://localhost:3000
+        run: BETTER_AUTH_SECRET="$(openssl rand -hex 32)" bun run build
   api-image:
     if: github.event_name == 'push'
     needs: [backend, frontend]
