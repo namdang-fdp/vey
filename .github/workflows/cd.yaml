@@ -60,8 +60,8 @@ jobs:
           umask 077
           key="$RUNNER_TEMP/vey-deploy-key"
           hosts="$RUNNER_TEMP/vey-known-hosts"
-          printf '%s\n' "$SSH_PRIVATE_KEY" > "$key"
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$hosts"
           trap 'rm -f -- "$key" "$hosts"' EXIT
           ssh -i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes \
             -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \

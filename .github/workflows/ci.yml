@@ -11,6 +11,64 @@ concurrency:
   # Let publishing runs finish a matching backend/frontend pair.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  ssh-preflight:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/deployment'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+    steps:
+      - name: Validate SSH secrets and server readiness without deploying
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SSH_HOST" =~ ^[a-zA-Z0-9.-]+$ ]] || { echo "Invalid SSH_HOST" >&2; exit 1; }
+          [[ "$SSH_USER" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]] || { echo "Invalid SSH_USER" >&2; exit 1; }
+          [[ "$SSH_PORT" =~ ^[0-9]+$ ]] && (( SSH_PORT >= 1 && SSH_PORT <= 65535 )) || { echo "Invalid SSH_PORT" >&2; exit 1; }
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]] || { echo "Missing SSH secrets" >&2; exit 1; }
+          umask 077
+          key="$RUNNER_TEMP/vey-preflight-key"
+          hosts="$RUNNER_TEMP/vey-preflight-hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$hosts"
+          trap 'rm -f -- "$key" "$hosts"' EXIT
+          ssh-keygen -y -P '' -f "$key" >/dev/null || { echo "Private key is invalid or requires a passphrase" >&2; exit 1; }
+          lookup="$SSH_HOST"
+          if [[ "$SSH_PORT" != 22 ]]; then lookup="[$SSH_HOST]:$SSH_PORT"; fi
+          ssh-keygen -F "$lookup" -f "$hosts" >/dev/null || { echo "Known-hosts entry does not match SSH_HOST/SSH_PORT" >&2; exit 1; }
+          ssh-keygen -l -f "$hosts" >/dev/null
+          ssh -i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o ConnectTimeout=15 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$hosts" \
+            "$SSH_USER@$SSH_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          for command in docker python3 flock; do command -v "$command" >/dev/null; done
+          test -x /root/selfhost/vey/cd.sh
+          previous=""
+          for app in vey-backend vey-frontend; do
+            directory="/root/selfhost/vey/$app"
+            test -r "$directory/.env"
+            docker compose --project-directory "$directory" -f "$directory/compose.yaml" config --quiet
+            version=$(sed -n 's/^VERSION=//p' "$directory/.env")
+            [[ "$version" =~ ^0\.[0-9]+$ ]]
+            if [[ -n "$previous" && "$previous" != "$version" ]]; then
+              echo "Backend/frontend versions differ" >&2; exit 1
+            fi
+            previous="$version"
+          done
+          for container in core_postgres18 core_kafka; do
+            [[ "$(docker inspect --format '{{.State.Health.Status}}' "$container")" == healthy ]]
+          done
+          docker exec core_nginx nginx -t
+          for image in vey-api vey-frontend; do
+            docker manifest inspect "ghcr.io/namdang-fdp/$image:feature-deployment" >/dev/null
+          done
+          echo "SSH authentication, host verification, compose files, infrastructure and registry access: OK"
+          echo "Current application VERSION=$previous; no deployment performed"
+          REMOTE
   deployment:
     runs-on: ubuntu-latest
     timeout-minutes: 5
