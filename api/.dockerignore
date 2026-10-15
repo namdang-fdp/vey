@@ -2,6 +2,7 @@
 **/.classpath
 **/.dockerignore
 **/.env
+**/.env.*
 **/.factorypath
 **/.git
 **/.gitignore
