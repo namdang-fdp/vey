@@ -76,16 +76,20 @@ use Docker DNS and do not traverse Cloudflare.
 
 Set these repository Actions secrets before merging the CD change into `main`:
 
-| Secret            | Value                                                   |
-| ----------------- | ------------------------------------------------------- |
-| `SSH_HOST`        | `157.66.100.18`                                         |
-| `SSH_PORT`        | `22`                                                    |
-| `SSH_USER`        | `root` (current server layout is under `/root`)         |
-| `SSH_PRIVATE_KEY` | A dedicated, unencrypted Ed25519 deployment private key |
-| `SSH_KNOWN_HOSTS` | Verified OpenSSH known-hosts entry for this server      |
+| Secret               | Value                                                 |
+| -------------------- | ----------------------------------------------------- |
+| `SSH_HOST`           | `157.66.100.18`                                       |
+| `SSH_PORT`           | `22`                                                  |
+| `SSH_USER`           | `root` (current server layout is under `/root`)       |
+| `SSH_PRIVATE_KEY`    | OpenSSH private key authorized on this server         |
+| `SSH_KEY_PASSPHRASE` | Passphrase if the private key is encrypted (optional) |
+| `SSH_KNOWN_HOSTS`    | Verified OpenSSH known-hosts entry for this server    |
 
-Generate a new deployment key on the local machine, register its public key on
-the server, and upload the private key directly from disk instead of chat:
+An existing authorized key works too. For an encrypted key, also set
+`SSH_KEY_PASSPHRASE`. Actions decrypts only its temporary key copy and removes it
+when the step finishes. Upload secret values directly instead of using chat.
+
+To create a separate deployment key, generate it on the local machine:
 
 ```sh
 ssh-keygen -t ed25519 -f ~/.ssh/vey-github-actions -C vey-github-actions -N ''

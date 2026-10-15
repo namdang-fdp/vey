@@ -20,6 +20,7 @@ jobs:
       SSH_PORT: ${{ secrets.SSH_PORT }}
       SSH_USER: ${{ secrets.SSH_USER }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
       SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
     steps:
       - name: Validate SSH secrets and server readiness without deploying
@@ -35,8 +36,20 @@ jobs:
           hosts="$RUNNER_TEMP/vey-preflight-hosts"
           printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$key"
           printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$hosts"
-          trap 'rm -f -- "$key" "$hosts"' EXIT
-          ssh-keygen -y -P '' -f "$key" >/dev/null || { echo "Private key is invalid or requires a passphrase" >&2; exit 1; }
+          askpass="$RUNNER_TEMP/vey-preflight-askpass"
+          trap 'rm -f -- "$key" "$hosts" "$askpass"' EXIT
+          if ! ssh-keygen -y -P '' -f "$key" >/dev/null 2>&1; then
+            [[ -n "$SSH_KEY_PASSPHRASE" ]] || { echo "Encrypted or invalid key: SSH_KEY_PASSPHRASE is required" >&2; exit 1; }
+            cat > "$askpass" <<'ASKPASS'
+          #!/usr/bin/env bash
+          printf '%s\n' "$SSH_KEY_PASSPHRASE"
+          ASKPASS
+            chmod 700 "$askpass"
+            export SSH_ASKPASS="$askpass" SSH_ASKPASS_REQUIRE=force DISPLAY=none
+            # Remove encryption only from the ephemeral runner copy; never pass the secret in argv.
+            ssh-keygen -p -N '' -f "$key" </dev/null >/dev/null
+          fi
+          ssh-keygen -y -P '' -f "$key" >/dev/null
           lookup="$SSH_HOST"
           if [[ "$SSH_PORT" != 22 ]]; then lookup="[$SSH_HOST]:$SSH_PORT"; fi
           ssh-keygen -F "$lookup" -f "$hosts" >/dev/null || { echo "Known-hosts entry does not match SSH_HOST/SSH_PORT" >&2; exit 1; }
@@ -231,4 +244,5 @@ jobs:
       SSH_PORT: ${{ secrets.SSH_PORT }}
       SSH_USER: ${{ secrets.SSH_USER }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
       SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
