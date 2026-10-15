@@ -1,11 +1,14 @@
 package com.dorriss.vey.common.exception;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public enum ErrorCode {
   SUCCESS(1000, "Success", HttpStatus.OK),
 
@@ -26,7 +29,7 @@ public enum ErrorCode {
   INVALID_SORT_FIELD(4048, "Invalid sort field", HttpStatus.BAD_REQUEST),
   INVALID_PAGINATION(4049, "Invalid pagination", HttpStatus.BAD_REQUEST);
 
-  private final int code;
-  private final String defaultMessage;
-  private final HttpStatus status;
+  int code;
+  String defaultMessage;
+  HttpStatus status;
 }
