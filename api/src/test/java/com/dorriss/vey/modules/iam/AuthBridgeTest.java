@@ -2,7 +2,8 @@ package com.dorriss.vey.modules.iam;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.dorriss.vey.modules.iam.application.SessionTokens;
+import com.dorriss.vey.modules.iam.application.support.SessionTokens;
+import com.dorriss.vey.modules.iam.domain.enums.MembershipRole;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -23,22 +24,30 @@ import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestComponent;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
+@Import(AuthBridgeTest.RoleProbeController.class)
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"org.jobrunr.background-job-server.enabled=false", "vey.api-docs.enabled=true"})
@@ -234,6 +243,99 @@ class AuthBridgeTest {
     int expected = List.of("suspended", "missing-membership").contains(kind) ? 403 : 401;
     assertThat(call(HttpMethod.GET, "/api/v1/auth/me", cookie, null).getStatusCode().value())
         .isEqualTo(expected);
+  }
+
+  @ParameterizedTest
+  @EnumSource(MembershipRole.class)
+  void methodSecurityGrantsOnlyTheActiveMembershipRole(MembershipRole role) throws Exception {
+    String cookie =
+        exchange(token("role-user", "Name", "valid")).getHeaders().getFirst(HttpHeaders.SET_COOKIE);
+    jdbc.update("update iam.workspace_memberships set role = ?", role.name());
+
+    for (MembershipRole required : MembershipRole.values()) {
+      assertThat(
+              call(HttpMethod.GET, "/api/v1/test/role/" + required.name(), cookie, null)
+                  .getStatusCode()
+                  .value())
+          .as("%s requesting %s", role, required)
+          .isEqualTo(role == required ? 200 : 403);
+    }
+  }
+
+  @Test
+  void methodSecurityRechecksRoleChangesForTheSameSession() throws Exception {
+    String cookie =
+        exchange(token("role-change", "Name", "valid"))
+            .getHeaders()
+            .getFirst(HttpHeaders.SET_COOKIE);
+    assertThat(call(HttpMethod.GET, "/api/v1/test/owner", cookie, null).getStatusCode().value())
+        .isEqualTo(200);
+
+    jdbc.update("update iam.workspace_memberships set role = 'MEMBER'");
+    assertThat(call(HttpMethod.GET, "/api/v1/test/owner", cookie, null).getStatusCode().value())
+        .isEqualTo(403);
+
+    jdbc.update("update iam.workspace_memberships set role = 'OWNER'");
+    assertThat(call(HttpMethod.GET, "/api/v1/test/owner", cookie, null).getStatusCode().value())
+        .isEqualTo(200);
+  }
+
+  @Test
+  void ownerOfAnotherWorkspaceDoesNotGainOwnerAuthorityInTheActiveWorkspace() throws Exception {
+    String cookie =
+        exchange(token("workspace-owner", "Name", "valid"))
+            .getHeaders()
+            .getFirst(HttpHeaders.SET_COOKIE);
+    assertThat(exchange(token("other-owner", "Other", "valid")).getStatusCode().value())
+        .isEqualTo(200);
+    jdbc.update(
+        """
+        insert into iam.workspace_memberships
+          (id, workspace_id, user_id, role, status, joined_at, created_at)
+        select gen_random_uuid(), w.id, u.id, 'GUEST', 'ACTIVE', now(), now()
+        from iam.users u cross join iam.workspaces w
+        where u.auth_user_id = 'workspace-owner'
+          and w.created_by_user_id = (select id from iam.users where auth_user_id = 'other-owner')
+        """);
+    jdbc.update(
+        """
+        update iam.sessions set active_workspace_id =
+          (select workspace_id from iam.workspace_memberships where role = 'GUEST')
+        where user_id = (select id from iam.users where auth_user_id = 'workspace-owner')
+        """);
+
+    assertThat(call(HttpMethod.GET, "/api/v1/test/owner", cookie, null).getStatusCode().value())
+        .isEqualTo(403);
+    assertThat(
+            call(HttpMethod.GET, "/api/v1/test/role/GUEST", cookie, null).getStatusCode().value())
+        .isEqualTo(200);
+  }
+
+  @Test
+  void roleProtectedMethodRequiresAnAuthenticatedVeySession() {
+    assertThat(call(HttpMethod.GET, "/api/v1/test/owner", null, null).getStatusCode().value())
+        .isEqualTo(401);
+    assertThat(
+            call(HttpMethod.GET, "/api/v1/test/owner", "vey_session=unknown", null)
+                .getStatusCode()
+                .value())
+        .isEqualTo(401);
+  }
+
+  @TestComponent
+  @RestController
+  public static class RoleProbeController {
+    @GetMapping("/api/v1/test/role/{role}")
+    @PreAuthorize("hasRole(#role)")
+    public String role(@PathVariable("role") String role) {
+      return "allowed";
+    }
+
+    @GetMapping("/api/v1/test/owner")
+    @PreAuthorize("hasRole('OWNER')")
+    public String owner() {
+      return "allowed";
+    }
   }
 
   @Test
