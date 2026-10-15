@@ -1,0 +1,311 @@
+Project Vey {
+  database_type: 'PostgreSQL'
+  Note: 'Snapshot của schema auth, iam và public. User tham gia workspace qua workspace_memberships; session thuộc user và giữ workspace đang chọn. Các FK created_by_user_id và initial_for_user_id ghi nguồn gốc/provisioning, không cấp quyền workspace. public gồm các bảng vận hành Flyway/JobRunr. IAM ánh xạ auth_user_id độc lập với schema auth.'
+}
+
+Table "auth"."account" {
+  "id" text [pk, not null]
+  "accountId" text [not null]
+  "providerId" text [not null]
+  "userId" text [not null]
+  "accessToken" text
+  "refreshToken" text
+  "idToken" text
+  "accessTokenExpiresAt" "timestamp with time zone"
+  "refreshTokenExpiresAt" "timestamp with time zone"
+  "scope" text
+  "password" text
+  "createdAt" "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  "updatedAt" "timestamp with time zone" [not null]
+
+  Indexes {
+    userId [type: btree, name: "account_userId_idx"]
+  }
+}
+
+Table "auth"."jwks" {
+  "id" text [pk, not null]
+  "publicKey" text [not null]
+  "privateKey" text [not null]
+  "createdAt" "timestamp with time zone" [not null]
+  "expiresAt" "timestamp with time zone"
+  "alg" text
+  "crv" text
+}
+
+Table "auth"."session" {
+  "id" text [pk, not null]
+  "expiresAt" "timestamp with time zone" [not null]
+  "token" text [unique, not null]
+  "createdAt" "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  "updatedAt" "timestamp with time zone" [not null]
+  "ipAddress" text
+  "userAgent" text
+  "userId" text [not null]
+
+  Indexes {
+    userId [type: btree, name: "session_userId_idx"]
+  }
+}
+
+Table "auth"."user" {
+  "id" text [pk, not null]
+  "name" text [not null]
+  "email" text [unique, not null]
+  "emailVerified" boolean [not null]
+  "image" text
+  "createdAt" "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  "updatedAt" "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table "auth"."verification" {
+  "id" text [pk, not null]
+  "identifier" text [not null]
+  "value" text [not null]
+  "expiresAt" "timestamp with time zone" [not null]
+  "createdAt" "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+  "updatedAt" "timestamp with time zone" [not null, default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    identifier [type: btree, name: "verification_identifier_idx"]
+  }
+}
+
+Table "iam"."sessions" {
+  "id" uuid [pk, not null]
+  "user_id" uuid [not null, note: 'Danh tính đăng nhập của session; một user có thể có nhiều session.']
+  "auth_session_id" "character varying(255)" [note: 'JWT sid = auth.session.id; ánh xạ logic, không FK xuyên schema. ACTIVE bắt buộc có binding.']
+  "auth_session_created_at" "timestamp with time zone" [note: 'Mốc tạo identity session để áp dụng cutoff khi reset mật khẩu.']
+  "exchange_token_hash" "character varying(64)" [unique, note: 'SHA-256(issuer | jti), chặn dùng lại cùng passport dù compact JWT đổi encoding.']
+  "token_hash" "character varying(64)" [unique, not null]
+  "active_workspace_id" uuid [note: 'Context workspace đang chọn, có thể NULL. Không cấp quyền: API kiểm membership ACTIVE của cặp user_id/workspace_id mỗi request.']
+  "status" "character varying(16)" [not null]
+  "expires_at" "timestamp with time zone" [not null]
+  "last_seen_at" "timestamp with time zone"
+  "revoked_at" "timestamp with time zone"
+  "revoked_reason" "character varying(255)"
+  "created_at" "timestamp with time zone" [not null]
+  "updated_at" "timestamp with time zone"
+
+  Checks {
+    `status <> 'ACTIVE' OR (auth_session_id IS NOT NULL AND auth_session_created_at IS NOT NULL)` [name: 'ck_sessions_active_identity']
+    `((status)::text = ANY ((ARRAY['ACTIVE'::character varying, 'REVOKED'::character varying, 'EXPIRED'::character varying])::text[]))` [name: 'ck_sessions_status']
+    `((token_hash)::text ~ '^[0-9a-f]{64}$'::text)` [name: 'ck_sessions_token_hash']
+  }
+
+  Indexes {
+    expires_at [type: btree, name: "idx_sessions_active_expiration", note: 'Partial index: WHERE status = ACTIVE']
+    active_workspace_id [type: btree, name: "idx_sessions_active_workspace"]
+    user_id [type: btree, name: "idx_sessions_user"]
+    auth_session_id [type: btree, name: "idx_sessions_identity"]
+  }
+}
+
+Table "iam"."auth_revocations" {
+  "id" uuid [pk, not null, note: 'jti của thông báo revoke; xử lý idempotent.']
+  "auth_user_id" "character varying(255)" [not null, note: 'auth.user.id; có thể tồn tại trước lần provision IAM đầu tiên nên không FK tới iam.users.']
+  "auth_session_id" "character varying(255)" [note: 'Có giá trị: revoke sid này. NULL: cutoff toàn user.']
+  "occurred_at" "timestamp with time zone" [not null]
+  "reason" "character varying(32)" [not null]
+
+  Note: 'Ledger chặn JWT từ identity session đã logout/reset tạo lại Vey session. Không phải quan hệ tham gia workspace.'
+
+  Checks {
+    `reason IN ('SESSION_REVOKED', 'PASSWORD_RESET')` [name: 'ck_auth_revocations_reason']
+    `(reason = 'SESSION_REVOKED' AND auth_session_id IS NOT NULL) OR (reason = 'PASSWORD_RESET' AND auth_session_id IS NULL)` [name: 'ck_auth_revocations_scope']
+  }
+  Indexes {
+    (auth_user_id, auth_session_id) [type: btree, name: "idx_auth_revocations_identity"]
+  }
+}
+
+Table "iam"."users" {
+  "id" uuid [pk, not null]
+  "auth_user_id" "character varying(255)" [unique, not null, note: 'JWT sub = auth.user.id. auth.account.userId trỏ auth.user.id; account là phương thức login, không phải user của Vey. Không FK xuyên schema auth/iam.']
+  "primary_email" "character varying(320)" [not null]
+  "email_verified" boolean [not null, default: false]
+  "first_name" "character varying(255)"
+  "last_name" "character varying(255)"
+  "display_name" "character varying(255)"
+  "avatar_url" text
+  "locale" "character varying(64)"
+  "timezone" "character varying(64)"
+  "status" "character varying(16)" [not null]
+  "last_seen_at" "timestamp with time zone"
+  "created_at" "timestamp with time zone" [not null]
+  "updated_at" "timestamp with time zone"
+  "deleted_at" "timestamp with time zone"
+
+  Checks {
+    `((status)::text = ANY ((ARRAY['ACTIVE'::character varying, 'DISABLED'::character varying])::text[]))` [name: 'ck_users_status']
+  }
+}
+
+Table "iam"."workspace_memberships" {
+  "id" uuid [pk, not null]
+  "workspace_id" uuid [not null]
+  "user_id" uuid [not null]
+  "role" "character varying(16)" [not null]
+  "status" "character varying(16)" [not null]
+  "joined_at" "timestamp with time zone" [not null]
+  "created_at" "timestamp with time zone" [not null]
+  "updated_at" "timestamp with time zone"
+
+  Note: 'Quan hệ N:N giữa users và workspaces. Mỗi cặp workspace/user chỉ có một membership; role và status ở đây quyết định quyền truy cập.'
+
+  Checks {
+    `((role)::text = ANY ((ARRAY['OWNER'::character varying, 'ADMIN'::character varying, 'MEMBER'::character varying, 'GUEST'::character varying])::text[]))` [name: 'ck_memberships_role']
+    `((status)::text = ANY ((ARRAY['ACTIVE'::character varying, 'SUSPENDED'::character varying, 'LEFT'::character varying, 'REMOVED'::character varying])::text[]))` [name: 'ck_memberships_status']
+  }
+
+  Indexes {
+    (workspace_id, user_id) [unique, name: "uq_memberships_workspace_user"]
+    user_id [type: btree, name: "idx_memberships_user"]
+  }
+}
+
+Table "iam"."workspaces" {
+  "id" uuid [pk, not null]
+  "type" "character varying(16)" [not null]
+  "name" "character varying(255)" [not null]
+  "slug" "character varying(255)" [unique, not null]
+  "created_by_user_id" uuid [not null, note: 'Người tạo workspace. Đây là provenance; quyền OWNER nằm ở membership. Một user có thể tạo nhiều workspace.']
+  "initial_for_user_id" uuid [unique, note: 'Đánh dấu personal workspace được provision ban đầu cho user. Mỗi user có tối đa một workspace mang dấu này; không giới hạn số workspace tham gia/tạo thêm.']
+  "status" "character varying(16)" [not null]
+  "created_at" "timestamp with time zone" [not null]
+  "updated_at" "timestamp with time zone"
+
+  Checks {
+    `((initial_for_user_id IS NULL) OR (((type)::text = 'PERSONAL'::text) AND (initial_for_user_id = created_by_user_id)))` [name: 'ck_workspaces_initial']
+    `((status)::text = ANY ((ARRAY['ACTIVE'::character varying, 'ARCHIVED'::character varying])::text[]))` [name: 'ck_workspaces_status']
+    `((type)::text = ANY ((ARRAY['PERSONAL'::character varying, 'TEAM'::character varying])::text[]))` [name: 'ck_workspaces_type']
+  }
+
+  Indexes {
+    created_by_user_id [type: btree, name: "idx_workspaces_creator"]
+  }
+}
+
+Table "flyway_schema_history" {
+  "installed_rank" integer [pk, not null]
+  "version" "character varying(50)"
+  "description" "character varying(200)" [not null]
+  "type" "character varying(20)" [not null]
+  "script" "character varying(1000)" [not null]
+  "checksum" integer
+  "installed_by" "character varying(100)" [not null]
+  "installed_on" timestamp [not null, default: `now()`]
+  "execution_time" integer [not null]
+  "success" boolean [not null]
+
+  Indexes {
+    success [type: btree, name: "flyway_schema_history_s_idx"]
+  }
+}
+
+Table "jobrunr_backgroundjobservers" {
+  "id" character(36) [pk, not null]
+  "workerpoolsize" integer [not null]
+  "pollintervalinseconds" integer [not null]
+  "firstheartbeat" timestamp(6) [not null]
+  "lastheartbeat" timestamp(6) [not null]
+  "running" integer [not null]
+  "systemtotalmemory" bigint [not null]
+  "systemfreememory" bigint [not null]
+  "systemcpuload" numeric(3,2) [not null]
+  "processmaxmemory" bigint [not null]
+  "processfreememory" bigint [not null]
+  "processallocatedmemory" bigint [not null]
+  "processcpuload" numeric(3,2) [not null]
+  "deletesucceededjobsafter" "character varying(32)"
+  "permanentlydeletejobsafter" "character varying(32)"
+  "name" "character varying(128)"
+
+  Indexes {
+    firstheartbeat [type: btree, name: "jobrunr_bgjobsrvrs_fsthb_idx"]
+    lastheartbeat [type: btree, name: "jobrunr_bgjobsrvrs_lsthb_idx"]
+  }
+}
+
+Table "jobrunr_jobs" {
+  "id" character(36) [pk, not null]
+  "version" integer [not null]
+  "jobasjson" text [not null]
+  "jobsignature" "character varying(512)" [not null]
+  "state" "character varying(36)" [not null]
+  "createdat" timestamp [not null]
+  "updatedat" timestamp [not null]
+  "scheduledat" timestamp
+  "recurringjobid" "character varying(128)"
+
+  Indexes {
+    createdat [type: btree, name: "jobrunr_job_created_at_idx"]
+    recurringjobid [type: btree, name: "jobrunr_job_rci_idx"]
+    scheduledat [type: btree, name: "jobrunr_job_scheduled_at_idx"]
+    jobsignature [type: btree, name: "jobrunr_job_signature_idx"]
+    (state, updatedat) [type: btree, name: "jobrunr_jobs_state_updated_idx"]
+    state [type: btree, name: "jobrunr_state_idx"]
+  }
+}
+
+Table "jobrunr_metadata" {
+  "id" "character varying(156)" [pk, not null]
+  "name" "character varying(92)" [not null]
+  "owner" "character varying(64)" [not null]
+  "value" text [not null]
+  "createdat" timestamp [not null]
+  "updatedat" timestamp [not null]
+}
+
+Table "jobrunr_recurring_jobs" {
+  "id" character(128) [pk, not null]
+  "version" integer [not null]
+  "jobasjson" text [not null]
+  "createdat" bigint [not null, default: `'0'::bigint`]
+
+  Indexes {
+    createdat [type: btree, name: "jobrunr_recurring_job_created_at_idx"]
+  }
+}
+
+Table "jobrunr_migrations" {
+  "id" character(36) [pk, not null]
+  "script" "character varying(64)" [not null]
+  "installedon" "character varying(29)" [not null]
+}
+
+Table jobrunr_jobs_stats {
+  total numeric
+  awaiting numeric
+  scheduled numeric
+  enqueued numeric
+  processing numeric
+  processed numeric
+  failed numeric
+  succeeded numeric
+  alltimesucceeded numeric
+  deleted numeric
+  nbrofbackgroundjobservers bigint
+  nbrofrecurringjobs bigint
+  Note: 'Database view represented as a table for ERD visualization.'
+}
+
+Ref "account_userId_fkey":"auth"."user"."id" <? "auth"."account"."userId" [delete: cascade]
+
+Ref "session_userId_fkey":"auth"."user"."id" <? "auth"."session"."userId" [delete: cascade]
+
+// Quyền tham gia: users N:N workspaces thông qua membership.
+Ref "fk_memberships_user":"iam"."users"."id" <? "iam"."workspace_memberships"."user_id" [delete: restrict]
+
+Ref "fk_memberships_workspace":"iam"."workspaces"."id" <? "iam"."workspace_memberships"."workspace_id" [delete: restrict]
+
+// Session: user là danh tính; active_workspace là context hiện tại.
+Ref "fk_sessions_user":"iam"."users"."id" <? "iam"."sessions"."user_id" [delete: restrict]
+
+Ref "fk_sessions_workspace":"iam"."workspaces"."id" ?<? "iam"."sessions"."active_workspace_id" [delete: restrict]
+
+// Provenance/provisioning: các quan hệ này không thay membership.
+Ref "fk_workspaces_creator":"iam"."users"."id" <? "iam"."workspaces"."created_by_user_id" [delete: restrict]
+
+// UNIQUE + nullable: mỗi bên có thể không có đối tác; không phải 1:N.
+Ref "fk_workspaces_initial_user":"iam"."users"."id" ?-? "iam"."workspaces"."initial_for_user_id"

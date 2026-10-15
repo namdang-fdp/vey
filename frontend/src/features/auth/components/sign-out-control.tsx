@@ -1,25 +1,25 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/stores/auth-store";
+import { useSignOut } from "../hooks/use-sign-out";
 
 export function SignOutControl({ compact = false }: { compact?: boolean }) {
-  const router = useRouter();
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const { signOut, isPending } = useSignOut();
 
   return (
     <Button
       type="button"
       variant="ghost"
-      size={compact ? "icon" : "sm"}
-      aria-label={compact ? "Sign out" : undefined}
-      onClick={() => {
-        clearSession();
-        router.replace("/login");
-      }}
+      size="sm"
+      disabled={isPending}
+      onClick={signOut}
+      className={
+        compact
+          ? "h-11 px-3"
+          : "h-11 w-full justify-start gap-3 rounded-xl px-3 text-muted-foreground hover:text-foreground"
+      }
     >
-      {compact ? "↪" : "Sign out"}
+      {isPending ? "Signing out..." : "Sign out"}
     </Button>
   );
 }

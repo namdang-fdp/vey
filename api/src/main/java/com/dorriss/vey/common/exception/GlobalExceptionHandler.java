@@ -85,6 +85,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         .body(buildError(ec.getCode(), ec.getDefaultMessage(), request.getRequestURI(), null));
   }
 
+  @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+  public ResponseEntity<ApiResponse<Object>> handleAuthentication(HttpServletRequest request) {
+    return ResponseEntity.status(401)
+        .body(buildError(4010, "Authentication required", request.getRequestURI(), null));
+  }
+
+  @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+  public ResponseEntity<ApiResponse<Object>> handleAccessDenied(HttpServletRequest request) {
+    return ResponseEntity.status(403)
+        .body(buildError(4030, "Workspace access denied", request.getRequestURI(), null));
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<Object>> handleUnexpected(
       Exception ex, HttpServletRequest request) {

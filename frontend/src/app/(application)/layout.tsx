@@ -1,45 +1,27 @@
-import Link from "next/link";
-import { BrandLogo } from "@/components/brand/brand-logo";
-import { ApplicationNavigation } from "@/components/shell/application-navigation";
+import { ApplicationShell } from "@/components/layout/application-shell";
 import { SignOutControl } from "@/features/auth/components/sign-out-control";
+import { auth } from "@/lib/auth/server";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { routes } from "@/config/routes";
+import { getVeySession } from "@/features/auth/api/session.server";
 
 export default async function ApplicationLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await getVeySession();
+  if (!session) {
+    const identity = await auth.api.getSession({ headers: await headers() });
+    redirect(identity ? routes.authComplete : routes.login);
+  }
+
   return (
-    <div className="min-h-dvh bg-background md:grid md:grid-cols-[14.5rem_minmax(0,1fr)]">
-      <aside className="hidden min-h-dvh flex-col border-r border-border bg-muted/60 px-3 py-4 md:flex">
-        <Link
-          href="/meetings"
-          className="mb-7 flex h-9 items-center px-2 text-base font-semibold tracking-tight outline-none focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          <BrandLogo />
-        </Link>
-        <ApplicationNavigation />
-        <div className="mt-auto border-t border-border pt-3">
-          <SignOutControl />
-        </div>
-      </aside>
-      <div className="min-w-0">
-        <header className="flex h-14 items-center gap-2 border-b border-border bg-surface px-4 md:hidden">
-          <Link
-            href="/meetings"
-            className="text-base font-semibold tracking-tight outline-none focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <BrandLogo markOnly />
-          </Link>
-          <ApplicationNavigation compact />
-          <div className="ml-auto">
-            <SignOutControl compact />
-          </div>
-        </header>
-        <main
-          id="main-content"
-          className="min-w-0 px-4 py-6 sm:px-6 md:px-8 md:py-8"
-        >
-          {children}
-        </main>
-      </div>
-    </div>
+    <ApplicationShell
+      user={session.user}
+      desktopAccountAction={<SignOutControl />}
+      mobileAccountAction={<SignOutControl compact />}
+    >
+      {children}
+    </ApplicationShell>
   );
 }
